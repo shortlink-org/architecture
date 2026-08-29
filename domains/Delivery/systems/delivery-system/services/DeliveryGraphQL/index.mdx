@@ -1,0 +1,47 @@
+---
+id: DeliveryGraphQL
+name: Delivery GraphQL Subgraph
+version: 1.0.0
+summary: |
+  Go/Connect subgraph exposing delivery tracking into the Shop federated graph.
+owners:
+  - shop-platform
+badges:
+  - content: Go
+    backgroundColor: blue
+    textColor: blue
+  - content: Cosmo Connect
+    backgroundColor: purple
+    textColor: purple
+  - content: Cross-domain
+    backgroundColor: orange
+    textColor: orange
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/shop/tree/main/delivery-graphql'
+---
+
+## Overview
+
+Registered in [[service|ShopBFF]] as the `delivery` subgraph on port 4013, translating federated GraphQL into
+[[service|DeliveryService]] gRPC.
+
+```text
+admin-ui / ui → BFF (Cosmo Router) → delivery-graphql (Go/Connect) → Delivery service (gRPC)
+```
+
+## Architecture diagram
+
+<NodeGraph />
+
+## The one that crosses a boundary
+
+Every other subgraph adapts a service in its own domain. This one lives in [[domain|Delivery]] and is composed into
+a graph owned by [[domain|Shop]] — the single synchronous path between the two boundaries.
+
+It is worth being deliberate about: a customer viewing an order gets tracking in the same response, and the cost is
+that the Shop graph will not compose without a Delivery-domain service being available at compose time.
+
+## No state of its own
+
+No database, no cache, no events. Tracking data belongs to [[service|DeliveryService]].

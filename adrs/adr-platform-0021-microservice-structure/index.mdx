@@ -54,5 +54,5 @@ This convention is what made building this catalog possible without reading ever
 enumerated in each README, ADRs are always in the same place, and `domain/` versus `infrastructure/` tells you which
 code is the model and which is plumbing.
 
-It also explains a gap: `boundaries/api` has no `ops/Helm` chart, which under this structure means it is not
-deployed.
+The convention also makes status legible: `boundaries/api` has no `ops/Helm` chart, and that boundary is
+deprecated — under this structure the absence of a chart is the visible half of that.

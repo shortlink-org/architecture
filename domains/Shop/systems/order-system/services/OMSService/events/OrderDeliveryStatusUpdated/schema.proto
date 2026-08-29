@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package domain.order.events.v1;
+
+option go_package = "github.com/shortlink-org/shop/oms/internal/domain/order/v1/events/v1";
+
+import "google/protobuf/timestamp.proto";
+import "domain/order/v1/common/common.proto";
+
+// OrderDeliveryStatusUpdatedEvent - canonical name: oms.order.delivery_status_updated.v1
+// Event when delivery status is updated
+// This event is received from delivery service
+message OrderDeliveryStatusUpdatedEvent {
+  // Order ID
+  string order_id = 1;
+  // Package ID assigned by delivery service
+  string package_id = 2;
+  // Delivery status
+  domain.order.common.v1.DeliveryStatus status = 3;
+  // Timestamp when status was updated
+  google.protobuf.Timestamp updated_at = 4;
+  // Optional: courier ID if assigned
+  string courier_id = 5;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 6;
+  // Aggregate version after the mutation was applied
+  int32 aggregate_version = 7;
+}

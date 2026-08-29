@@ -1,0 +1,31 @@
+---
+id: delivery.order.order_picked_up.v1
+name: delivery.order.order_picked_up.v1
+version: 1.0.0
+summary: |
+  Inbound: a courier confirming they collected the package.
+owners:
+  - shop-platform
+address: delivery.order.order_picked_up.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|CourierEmulationService]] carrying [[event|OrderPickedUp]], consumed by
+[[service|DeliveryService]], which moves the [[entity|Package]] to `IN_TRANSIT` and emits
+[[event|PackageInTransit]].
+
+Wired through `KAFKA_PICKUP_TOPIC`.
+
+## Configuration
+
+| | |
+|---|---|
+| Partitions | 3 |
+| Retention | 7 days |
+| Payload | JSON |
+
+<NodeGraph />

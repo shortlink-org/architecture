@@ -1,0 +1,23 @@
+---
+id: oms.order.created.v1
+name: oms.order.created.v1
+version: 1.0.0
+summary: |
+  Carries OrderCreated. The fact that a purchase was committed.
+owners:
+  - shop-platform
+address: oms.order.created.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|OMSService]] carrying [[event|OrderCreated]] — the moment a [[entity|Cart]] becomes an
+[[entity|Order]].
+
+No consumer inside the boundary. It is the event most likely to be wanted outside it: it carries the full item
+list, customer and status, so a downstream reader does not need to call back.
+
+<NodeGraph />

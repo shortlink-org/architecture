@@ -1,0 +1,52 @@
+---
+id: CourierLocationUpdated
+name: Courier location updated
+version: 1.0.0
+summary: |
+  A courier's position, republished as a domain event.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: delivery.courier.location.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Emitted after [[service|DeliveryService]] consumes a raw position off
+[[channel|delivery.courier.location_received.v1]], writes it to the TTL'd cache in [[container|delivery-redis]] and
+appends it to `courier_location_history`.
+
+Carries only the courier id, the location and timestamps — the smallest payload in the domain, because it is also
+by far the most frequent.
+
+## Two location topics, opposite directions
+
+| Topic | Direction |
+|-------|-----------|
+| [[channel\|delivery.courier.location_received.v1]] | inbound, from the courier side |
+| [[channel\|delivery.courier.location.v1]] | outbound, this event |
+
+Confusing the two is easy and the names do not help.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|delivery.courier.location.v1]] |
+| Key | `courier_id` |
+| Retention | 1 day — shorter than every other topic in the domain |
+| Consumers | none today |
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

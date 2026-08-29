@@ -1,0 +1,184 @@
+---
+id: OMSService
+name: OMS Service
+version: 1.0.0
+summary: |
+  Owns the cart and order aggregates, runs them as Temporal workflows, and is the only publisher of Shop events.
+owners:
+  - shop-platform
+sends:
+  - id: CartItemAdded
+    to:
+      - id: oms.oms.item_added_event.v1
+  - id: CartItemRemoved
+    to:
+      - id: oms.oms.item_removed_event.v1
+  - id: CartReset
+    to:
+      - id: oms.oms.reset_event.v1
+  - id: OrderCreated
+    to:
+      - id: oms.order.created.v1
+  - id: OrderCancelled
+    to:
+      - id: oms.order.cancelled.v1
+  - id: OrderCompleted
+    to:
+      - id: oms.order.completed.v1
+  - id: OrderDeliveryRequested
+    to:
+      - id: oms.order.delivery_requested_event.v1
+  - id: OrderDeliveryStatusUpdated
+    to:
+      - id: oms.order.delivery_status_updated_event.v1
+  - id: OrderDeliveryCompleted
+    to:
+      - id: oms.order.delivery_completed_event.v1
+  - id: OrderDeliveryFailed
+    to:
+      - id: oms.order.delivery_failed_event.v1
+receives:
+  - id: PackageAccepted
+    from:
+      - id: delivery.package.status.v1
+  - id: PackageAssigned
+    from:
+      - id: delivery.package.status.v1
+  - id: PackageInTransit
+    from:
+      - id: delivery.package.status.v1
+  - id: PackageDelivered
+    from:
+      - id: delivery.package.status.v1
+  - id: PackageNotDelivered
+    from:
+      - id: delivery.package.status.v1
+  - id: OrderCompleted
+    from:
+      - id: oms.order.completed.v1
+  - id: AddCartItem
+  - id: RemoveCartItem
+  - id: ResetCart
+  - id: CreateOrder
+  - id: CancelOrder
+  - id: UpdateOrderDeliveryInfo
+  - id: CheckoutOrder
+  - id: GetCart
+  - id: GetOrder
+  - id: ListOrders
+  - id: GetGoodsLeaderboard
+writesTo:
+  - id: oms-postgres
+  - id: oms-redis-leaderboard
+readsFrom:
+  - id: oms-postgres
+  - id: oms-redis-leaderboard
+entities:
+  - id: Cart
+  - id: Order
+badges:
+  - content: Go
+    backgroundColor: blue
+    textColor: blue
+  - content: Temporal
+    backgroundColor: purple
+    textColor: purple
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: DDD
+    backgroundColor: gray
+    textColor: gray
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/shop/tree/main/oms'
+---
+
+## Overview
+
+The heart of [[domain|Shop]]. It owns [[entity|Cart]] and [[entity|Order]], holds them as durable Temporal
+workflows, and is the only service in the domain that publishes to Kafka.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Aggregates as workflows
+
+A cart is a running workflow mutated by signals — ADD, REMOVE, RESET — rather than a row that gets updated, so it
+survives sessions and restarts. An order is a workflow moving through the `PENDING → PROCESSING → COMPLETED`
+state machine, with `CANCEL` available from either non-terminal state.
+
+[[adr|adr-oms-0003-temporal]] made the choice; [[adr|adr-oms-0004-hexagonal-architecture-with-temporal]] keeps it
+from leaking into the domain layer.
+
+Domain services sit alongside the aggregates: `StockCartService` and `CartValidationService`.
+
+## Every write follows the same five steps
+
+```go
+// oms/internal/usecases/cart/command/add_item/handler.go
+cart, err := h.cartRepo.Load(ctx, cmd.CustomerID)   // 1. load (or construct)
+err = cart.AddItem(cmd.Item)                        // 2. domain method
+err = h.cartRepo.Save(ctx, cart)                    // 3. save aggregate
+for _, event := range cart.GetDomainEvents() {      // 4. drain events to outbox
+    err = h.publisher.Publish(ctx, event)
+}
+err = h.uow.Commit(ctx)                             // 5. one commit for all of it
+```
+
+The aggregate and its events commit together. There is no window in which an order exists without its event, or an
+event exists for an order that rolled back.
+
+## Events
+
+Topic names are never written by hand. The bus is built with `cqrsmessage.NewShortlinkNamer("oms")` and derives the
+topic from the event value at publish time, so renaming an event renames its topic.
+
+That also means the topic is **not** what the source says it is. `EventType()` in `event_type.go` and the
+`EventTopic` enum in `domain/cart/v1/event.proto` both spell out canonical ADR-0002 names, and neither is consulted
+by `event_bus.go`. Only three events actually land on a canonical topic — the full comparison is in the
+[[domain|Shop]] domain page, and every channel page carries the real address.
+
+Two things differ from [[domain|Link]]:
+
+| | Link | Shop |
+|---|---|---|
+| Marshaller | `ProtoMarshaler` | **`JSONMarshaler`** — protobuf defines the shape, JSON goes on the wire |
+| Path to Kafka | publisher | **transactional outbox** in Postgres, then a forwarder |
+
+The forwarder runs in-process as `oms-outbox-forwarder`, reading the `oms_outbox` topic through `watermill-sql`
+and republishing to Kafka. See [[adr|adr-oms-0005-reliable-domain-events-outbox]].
+
+## Consuming delivery status
+
+A single consumer, group `oms-delivery-consumer`, subscribes to [[channel|delivery.package.status.v1]] and switches
+on the `event_type` header. It handles five of the six package events; `PackageRequiresHandling` is rejected as a
+non-status event.
+
+For each accepted message the handler:
+
+1. records the message id in `oms.delivery_inbox_messages` — the inbox that makes redelivery a no-op,
+2. drops the message if it is duplicate or stale for the order's current state,
+3. applies it to the [[entity|Order]],
+4. publishes the order's **own** event.
+
+That last step is why [[event|OrderDeliveryStatusUpdated]], [[event|OrderDeliveryCompleted]] and
+[[event|OrderDeliveryFailed]] are Shop events even though the fact originated in [[domain|Delivery]]. A consumer of
+orders never has to subscribe to a delivery topic.
+
+> [!NOTE]
+> The protobuf comments on those three messages say "received from delivery service". They are wrong. The code that
+> writes them is `usecases/order/event/on_delivery_status/handler.go`.
+
+## Consuming its own event
+
+The leaderboard consumer subscribes to [[channel|oms.order.completed.v1]] — the service listening to itself. It
+folds each completed order into [[container|oms-redis-leaderboard]] through an idempotent Lua script keyed on order
+id plus aggregate version. See [[adr|adr-shop-0006-goods-leaderboard-read-model]].
+
+## Pricing is optional by design
+
+The [[service|PricerService]] client is constructed with a fallback: if it cannot connect, the service logs
+`Failed to create Pricer gRPC client, running without pricing integration` and continues with a nil client rather
+than failing to start. Pricing is an enhancement, not a dependency.

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package domain.delivery.events.v1;
+
+import "google/protobuf/timestamp.proto";
+import "delivery/common/v1/common.proto";
+
+// CourierLocationUpdatedEvent - canonical name: delivery.courier.location_updated.v1
+// Event when courier location is updated
+message CourierLocationUpdatedEvent {
+  // Courier ID
+  string courier_id = 1;
+  // Courier location
+  domain.delivery.common.v1.Location location = 2;
+  // Updated at timestamp
+  google.protobuf.Timestamp updated_at = 3;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 4;
+}

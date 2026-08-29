@@ -1,0 +1,26 @@
+---
+id: shop-platform
+name: Shop Platform
+summary: Owns commerce and fulfilment — the goods catalogue, cart and order lifecycle, pricing, and package delivery.
+email: batazor111@gmail.com
+---
+
+## Overview
+
+The Shop Platform team owns two boundaries that ship from one repository: [[domain|Shop]] (goods, cart, order,
+pricing, storefront) and [[domain|Delivery]] (packages and couriers).
+
+They are separate domains because the aggregates, the databases and the Temporal namespaces are separate — but one
+team carries both, so a change that crosses the boundary does not cross an organisation.
+
+## Responsibilities
+
+- **Goods catalogue** — the Django back office and the reference data behind it
+- **Cart and order lifecycle** — the OMS aggregates and their Temporal workflows
+- **Pricing** — tax and discount policy, expressed in Rego
+- **Federated graph** — the Cosmo Router and the subgraphs behind it
+- **Delivery** — package state machine, courier dispatch and tracking
+
+## Repository
+
+All services live in [shortlink-org/shop](https://github.com/shortlink-org/shop) as top-level directories.

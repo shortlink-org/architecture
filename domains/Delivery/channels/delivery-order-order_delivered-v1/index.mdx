@@ -1,0 +1,33 @@
+---
+id: delivery.order.order_delivered.v1
+name: delivery.order.order_delivered.v1
+version: 1.0.0
+summary: |
+  Inbound: a courier confirming the outcome of a delivery attempt.
+owners:
+  - shop-platform
+address: delivery.order.order_delivered.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|CourierEmulationService]] carrying [[event|OrderDelivered]], consumed by
+[[service|DeliveryService]].
+
+Carries the outcome of the attempt, not only success — a failure lands the [[entity|Package]] in `NOT_DELIVERED`
+with a structured reason and emits [[event|PackageNotDelivered]].
+
+Wired through `KAFKA_DELIVERY_RESULT_TOPIC`.
+
+## Configuration
+
+| | |
+|---|---|
+| Partitions | 3 |
+| Retention | 7 days |
+| Payload | JSON |
+
+<NodeGraph />

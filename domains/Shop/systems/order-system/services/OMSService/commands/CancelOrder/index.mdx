@@ -1,0 +1,45 @@
+---
+id: CancelOrder
+name: Cancel order
+version: 1.0.0
+summary: |
+  Cancels an order, optionally with a reason.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Order
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`OrderService.Cancel` on [[service|OMSService]] — the CANCEL transition, reachable from both `PENDING` and
+`PROCESSING`.
+
+## Contract
+
+```proto
+rpc Cancel(CancelRequest) returns (google.protobuf.Empty);
+```
+
+## Effect
+
+Emits [[event|OrderCancelled]] carrying the reason when one was supplied.
+
+> [!NOTE]
+> Cancelling an order does not cancel its package. [[domain|Delivery]] exposes no cancel operation on
+> [[service|DeliveryService]] at all — an order cancelled after [[command|AcceptOrder]] leaves a live
+> [[entity|Package]] behind.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

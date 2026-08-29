@@ -1,0 +1,44 @@
+---
+id: PickUpOrder
+name: Pick up order
+version: 1.0.0
+summary: |
+  Confirms the courier collected the package.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Package
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.PickUpOrder`. Moves a [[entity|Package]] from `ASSIGNED` to `IN_TRANSIT`.
+
+## Contract
+
+```proto
+rpc PickUpOrder(PickUpOrderRequest) returns (PickUpOrderResponse);
+```
+
+## Usually driven by Kafka, not by this RPC
+
+In practice the courier side confirms pickup by publishing [[event|OrderPickedUp]] to
+[[channel|delivery.order.order_picked_up.v1]], which the service consumes. The RPC exists for direct callers.
+
+## Effect
+
+Emits [[event|PackageInTransit]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,33 @@
+---
+id: ActivateCourier
+name: Activate courier
+version: 1.0.0
+summary: |
+  Marks a courier as available for assignments.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Courier
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.ActivateCourier`. Sets [[entity|Courier]] status to `FREE`, making them dispatchable.
+
+## Effect
+
+Emits [[event|CourierStatusChanged]] carrying both the old and new status.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,87 @@
+---
+dictionary:
+  - id: Good
+    name: Good
+    summary: "A product or item available for purchase — the primary term for merchandise across the whole boundary."
+    description: |
+      Managed by [Admin Service](#), displayed in the storefront, and referenced by cart items and order items.
+
+      Two aliases exist and neither replaces the term. The storefront's TypeScript type is called `Product`, kept
+      for compatibility with the Shopify-shaped GraphQL the UI was forked from. `Item` in the retired Merch service
+      meant an SKU-level inventory unit, which is a different level of abstraction altogether.
+    icon: Package
+
+  - id: Cart
+    name: Cart
+    summary: "A customer's in-progress selection of goods. An aggregate, keyed by customer, that survives between sessions."
+    description: |
+      Held as a Temporal workflow so it outlives any single request or session, and mutated by signals rather than
+      by direct writes: ADD, REMOVE, RESET.
+
+      A cart is not an order. It has no status, no delivery information and no price guarantee — the total is
+      recomputed on demand by asking the pricing service.
+    icon: ShoppingCart
+
+  - id: CartItem
+    name: Cart item
+    summary: "An entry in a cart: a reference to a Good, a quantity, and price information."
+    icon: Tag
+
+  - id: Order
+    name: Order
+    summary: "A committed purchase. The aggregate that carries status, items, customer and — when it needs shipping — delivery information."
+    description: |
+      Created from a cart at checkout and then moved through its lifecycle by workflow: created, completed,
+      cancelled.
+
+      Delivery is not part of the order aggregate. When an order needs shipping, the order publishes a request and
+      later records what it hears back; the package itself belongs to the Delivery boundary.
+    icon: Receipt
+
+  - id: OrderItem
+    name: Order item
+    summary: "An entry in an order: a reference to a Good, a quantity, a price, and order-specific detail."
+    icon: Tag
+
+  - id: Checkout
+    name: Checkout
+    summary: "The act of turning a cart into an order."
+    description: |
+      The point where a mutable selection becomes a commitment. Prices are resolved, the order aggregate is
+      created, and — if the order ships — a delivery request leaves the boundary.
+    icon: CreditCard
+
+  - id: Office
+    name: Office
+    summary: "A physical location held as reference data in the back office."
+    icon: Building2
+
+  - id: Leaderboard
+    name: Goods leaderboard
+    summary: "A ranking of goods by completed orders, maintained as a Redis read model fed from Kafka."
+    description: |
+      Not a query over the order table. Completed-order events are consumed and folded into a sorted set in Redis,
+      with processed-event keys guarding against double counting on redelivery.
+
+      It is a projection: it can be rebuilt from the event stream, and it is allowed to lag.
+    icon: Trophy
+
+  - id: Policy
+    name: Pricing policy
+    summary: "A discount or tax rule, expressed in Rego and evaluated by the pricing service rather than compiled into it."
+    description: |
+      Two rule shapes exist today: a quantity discount ("3 for 2") and a combination discount (a percentage off
+      when the cart holds two or more distinct goods).
+
+      Rules deliberately need only `productId`, `quantity` and `price` per item — no brand, no time window — so
+      that pricing stays a pure function of the cart.
+    icon: Percent
+
+  - id: Subgraph
+    name: Subgraph
+    summary: "A typed adapter that exposes one backend into the federated graph. Holds no business logic and no datastore."
+    description: |
+      Three exist: carts over the order engine's gRPC, admin over the Django REST API, and delivery over the
+      Delivery boundary's gRPC. The router composes them into one schema.
+    icon: Share2
+---

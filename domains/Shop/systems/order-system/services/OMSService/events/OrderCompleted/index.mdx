@@ -1,0 +1,46 @@
+---
+id: OrderCompleted
+name: Order completed
+version: 1.0.0
+summary: |
+  Published when an order reaches its terminal successful state. The only Shop event with a consumer.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: oms.order.completed.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf shape, JSON on the wire
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+The terminal success state of the [[entity|Order]] state machine — and the only Shop event that anything subscribes
+to.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|oms.order.completed.v1]] |
+| Serialization | JSON, from the protobuf-defined shape |
+| Consumer | [[service\|OMSService]] — the leaderboard consumer |
+
+## Feeding the leaderboard
+
+[[service|OMSService]] consumes its own event to build [[container|oms-redis-leaderboard]]. Because `COMPLETED` is
+terminal, a completed order counts exactly once — and the consumer enforces that anyway with an idempotency key
+built from order id plus `aggregate_version`, since Kafka delivers at least once.
+
+See [[adr|adr-shop-0006-goods-leaderboard-read-model]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

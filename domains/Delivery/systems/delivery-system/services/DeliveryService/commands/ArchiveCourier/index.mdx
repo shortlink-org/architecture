@@ -1,0 +1,38 @@
+---
+id: ArchiveCourier
+name: Archive courier
+version: 1.0.0
+summary: |
+  Soft-deletes a courier.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Courier
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.ArchiveCourier`. Sets [[entity|Courier]] status to `ARCHIVED`.
+
+## Soft delete on purpose
+
+The aggregate stays so that historical [[entity|Package]] records still resolve their courier. Archiving only stops
+the courier being dispatchable.
+
+## Effect
+
+Emits [[event|CourierStatusChanged]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

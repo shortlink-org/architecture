@@ -1,0 +1,46 @@
+---
+id: CourierLocationReceived
+name: Courier location received
+version: 1.0.0
+summary: |
+  A raw position report from the courier side.
+owners:
+  - shop-platform
+badges:
+  - content: 'Topic: delivery.courier.location_received.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: JSON
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Published by [[service|CourierEmulationService]] as it walks an OSRM route, and consumed by
+[[service|DeliveryService]], which caches the position, appends it to history and republishes it as
+[[event|CourierLocationUpdated]].
+
+The payload is the Go value object `vo.CourierLocationEvent`, serialized to JSON — there is no protobuf contract
+for it.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|delivery.courier.location_received.v1]] |
+| Serialization | JSON |
+| Consumer | [[service\|DeliveryService]] |
+
+> [!WARNING]
+> The consuming side's compiled-in default topic is `courier.location.updates`, which does not exist. The correct
+> name comes from `KAFKA_LOCATION_TOPIC` in the delivery Helm values.
+
+## In production this would not be the emulator
+
+The event models a courier's phone reporting its position. Today the only producer is the emulator, which is why it
+lives in [[system|courier-emulation-system]] — but the contract is the real one a courier app would use.
+
+## Architecture diagram
+
+<NodeGraph />

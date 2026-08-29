@@ -1,0 +1,39 @@
+---
+id: delivery.courier.location_received.v1
+name: delivery.courier.location_received.v1
+version: 1.0.0
+summary: |
+  Inbound: raw courier positions reported from the field.
+owners:
+  - shop-platform
+address: delivery.courier.location_received.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|CourierEmulationService]] carrying [[event|CourierLocationReceived]], consumed by
+[[service|DeliveryService]].
+
+The consumer writes the position to the TTL'd cache in [[container|delivery-redis]], appends to
+`courier_location_history` in [[container|delivery-postgres]], and republishes it as
+[[event|CourierLocationUpdated]] on [[channel|delivery.courier.location.v1]].
+
+## The topic name is only correct in the deployment
+
+> [!WARNING]
+> The Rust constant `TOPIC_COURIER_LOCATION_UPDATES` defaults to `courier.location.updates` — a topic that is not
+> declared anywhere. The correct name comes from `KAFKA_LOCATION_TOPIC` in
+> `delivery/ops/delivery/values.yaml`. Read the Helm values, not the constant.
+
+## Configuration
+
+| | |
+|---|---|
+| Partitions | 3 |
+| Retention | 1 day |
+| Payload | JSON |
+
+<NodeGraph />

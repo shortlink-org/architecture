@@ -1,0 +1,47 @@
+---
+id: delivery.package.status.v1
+name: delivery.package.status.v1
+version: 1.0.0
+summary: |
+  One ordered stream per package, carrying all six package lifecycle events. The main integration point back into Shop.
+owners:
+  - shop-platform
+address: delivery.package.status.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|DeliveryService]], consumed by [[service|OMSService]] in consumer group
+`oms-delivery-consumer`.
+
+This is the consolidated topic that [[domain|Delivery]] uses instead of the per-event names its protobuf comments
+claim. Six events share it:
+
+[[event|PackageAccepted]], [[event|PackageAssigned]], [[event|PackageInTransit]], [[event|PackageDelivered]],
+[[event|PackageNotDelivered]], [[event|PackageRequiresHandling]].
+
+Consumers discriminate on an `event_type` header, not on the topic.
+
+## Configuration
+
+| | |
+|---|---|
+| Partitions | 3 |
+| Key | `package_id` — guarantees ordering per package |
+| Retention | 7 days |
+| Cleanup | delete |
+| Payload | protobuf |
+
+Keying on `package_id` is what makes the state machine safe to consume: two transitions of the same package can
+never be reordered across partitions.
+
+## The consumer takes five of six
+
+[[service|OMSService]] handles `ACCEPTED`, `ASSIGNED`, `IN_TRANSIT`, `DELIVERED` and `NOT_DELIVERED`.
+[[event|PackageRequiresHandling]] is rejected as a non-status event — it is an operational signal, not an order
+state change.
+
+<NodeGraph />

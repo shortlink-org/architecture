@@ -1,0 +1,90 @@
+---
+id: Order
+name: Order
+version: 1.0.0
+identifier: order_id
+aggregateRoot: true
+summary: A committed purchase — items, customer, status, and the delivery information attached when it ships.
+owners:
+  - shop-platform
+properties:
+  - name: order_id
+    type: UUID
+    required: true
+    description: Aggregate identifier.
+  - name: customer_id
+    type: UUID
+    required: true
+    description: Who placed the order.
+  - name: items
+    type: OrderItem[]
+    required: true
+    description: Good id, quantity and price per line, captured at checkout.
+    references: Good
+    referencesIdentifier: id
+    relationType: hasMany
+  - name: status
+    type: OrderStatus
+    required: true
+    description: Lifecycle state of the order.
+    enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED']
+  - name: delivery_status
+    type: DeliveryStatus
+    required: false
+    description: Last delivery state heard from the Delivery boundary. Absent for orders that do not ship.
+    enum: ['ACCEPTED', 'ASSIGNED', 'IN_TRANSIT', 'DELIVERED', 'NOT_DELIVERED']
+  - name: package_id
+    type: UUID
+    required: false
+    description: Identifier assigned by the Delivery boundary. A reference across a boundary, not a foreign key.
+  - name: aggregate_version
+    type: int32
+    required: true
+    description: Incremented per mutation. Carried on every event and used to reject stale delivery updates.
+---
+
+## Overview
+
+The central aggregate of [[system|order-system]], owned by [[service|OMSService]] and stored in
+[[container|oms-postgres]].
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Status is a state machine, not a column
+
+The protobuf separates **state** from **action**: `OrderStatus` is the state, `OrderTransitionEvent` is what moves
+it.
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> PROCESSING: CREATE
+    PROCESSING --> COMPLETED: COMPLETE
+    PENDING --> CANCELLED: CANCEL
+    PROCESSING --> CANCELLED: CANCEL
+    COMPLETED --> [*]
+    CANCELLED --> [*]
+```
+
+A completed order is terminal — which is what makes [[event|OrderCompleted]] safe to fold into the
+[[container|oms-redis-leaderboard]] ranking.
+
+## Delivery is referenced, never owned
+
+An order that ships carries a `package_id` and a `delivery_status`, and nothing else about the shipment. The
+[[entity|Package]] itself is an aggregate in the [[domain|Delivery]] boundary with its own lifecycle, its own
+database and its own courier.
+
+The order learns about it by consuming delivery status and re-publishing it as its own event, so that a consumer of
+the order never has to subscribe to a delivery topic.
+
+## Why the version matters
+
+`aggregate_version` rides on every event the order publishes. Two mechanisms depend on it:
+
+- **Stale delivery updates are dropped.** Delivery status arrives at-least-once and out of order; the handler
+  compares against the current state before applying.
+- **The leaderboard deduplicates on it.** The processed-event key in Redis is built from the order id *and* this
+  version, so a redelivered message is ignored while a genuine later change still counts.

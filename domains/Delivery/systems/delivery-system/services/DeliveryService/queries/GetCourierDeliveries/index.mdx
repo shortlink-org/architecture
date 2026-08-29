@@ -1,0 +1,38 @@
+---
+id: GetCourierDeliveries
+name: Get courier deliveries
+version: 1.0.0
+summary: |
+  Returns a courier's recent deliveries.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Courier
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.GetCourierDeliveries`. Delivery history for one [[entity|Courier]].
+
+## Contract
+
+```proto
+rpc GetCourierDeliveries(GetCourierDeliveriesRequest) returns (GetCourierDeliveriesResponse);
+```
+
+The aggregate itself carries `successful_deliveries` and `failed_deliveries` counters; this query returns the
+individual records behind them.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

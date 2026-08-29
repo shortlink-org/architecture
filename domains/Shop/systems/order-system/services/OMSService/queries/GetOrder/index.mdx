@@ -1,0 +1,44 @@
+---
+id: GetOrder
+name: Get order
+version: 1.0.0
+summary: |
+  Returns a single order by id.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Order
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`OrderService.Get` on [[service|OMSService]].
+
+## Contract
+
+```proto
+rpc Get(GetRequest) returns (GetResponse);
+```
+
+Reads from [[container|oms-postgres]] — the same store the aggregate is written to. There is no CQRS read model for
+orders, unlike the [[domain|Link]] domain.
+
+## Delivery information
+
+An order that ships carries `package_id` and `delivery_status`, both updated by consuming
+[[channel|delivery.package.status.v1]]. Live tracking is not here — that is
+[[query|GetOrderTracking]] in the [[domain|Delivery]] boundary, keyed by this same order id.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

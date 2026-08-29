@@ -15,7 +15,13 @@ maintained by hand as prose.
 |----------|--------|--------|
 | Auth | documented | [shortlink-org/auth](https://github.com/shortlink-org/auth) |
 | Link | documented | [shortlink-org/shortlink](https://github.com/shortlink-org/shortlink) `boundaries/link`, `bff`, `proxy`, `metadata`, `ui` |
-| API | not yet | [shortlink-org/shortlink](https://github.com/shortlink-org/shortlink) `boundaries/api` |
+| Shop | documented | [shortlink-org/shop](https://github.com/shortlink-org/shop) `admin`, `admin-graphql`, `admin-ui`, `oms`, `oms-graphql`, `pricer`, `bff`, `ui` |
+| Delivery | documented | [shortlink-org/shop](https://github.com/shortlink-org/shop) `delivery`, `delivery-graphql`, `courier-emulation`, `support` |
+| API | deprecated — not documented | [shortlink-org/shortlink](https://github.com/shortlink-org/shortlink) `boundaries/api` |
+
+> [!NOTE]
+> Shop and Delivery are two domains from one repository. They are split because the aggregates, the databases and
+> the Temporal namespaces are separate.
 
 ## Local development
 
@@ -60,8 +66,10 @@ teams/                      ownership
 that constrain every boundary rather than any single one. Boundary-specific ADRs live next to the resource they
 apply to, under `domains/<Domain>/adrs/` or inside a system.
 
-ADR ids are prefixed by source (`adr-platform-*`, `adr-auth-*`, `adr-link-*`, `adr-proxy-*`) because the upstream
-repositories number their ADRs independently and would otherwise collide.
+ADR ids are prefixed by source (`adr-platform-*`, `adr-auth-*`, `adr-link-*`, `adr-proxy-*`, `adr-shop-*`,
+`adr-admin-*`, `adr-oms-*`, `adr-oms-graphql-*`, `adr-delivery-*`, `adr-delivery-graphql-*`,
+`adr-courier-emulation-*`, `adr-support-*`) because the upstream repositories number their ADRs independently and
+would otherwise collide.
 
 ## Schemas
 

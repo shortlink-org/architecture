@@ -1,0 +1,48 @@
+---
+id: DeliverOrder
+name: Deliver order
+version: 1.0.0
+summary: |
+  Confirms the outcome of a delivery attempt — success or failure.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Package
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.DeliverOrder`. One command for both terminal outcomes, distinguished by the status field:
+
+```proto
+message DeliverOrderCommand {
+  string package_id = 1;
+  string courier_id = 2;
+  DeliveryStatus status = 3;   // DELIVERED or NOT_DELIVERED
+  string reason = 4;           // required when NOT_DELIVERED
+  bytes photo = 5;             // optional
+  bytes customer_signature = 6;// optional
+  Location current_location = 7;
+}
+```
+
+## Effect
+
+Emits [[event|PackageDelivered]] or [[event|PackageNotDelivered]] depending on `status`.
+
+The courier's location after the attempt is captured either way, so a failed delivery still records where the
+courier was when it failed.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

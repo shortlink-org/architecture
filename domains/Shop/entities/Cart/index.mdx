@@ -1,0 +1,58 @@
+---
+id: Cart
+name: Cart
+version: 1.0.0
+identifier: customer_id
+aggregateRoot: true
+summary: A customer's in-progress selection of goods. Keyed by customer, held as a Temporal workflow, mutated by signals.
+owners:
+  - shop-platform
+properties:
+  - name: customer_id
+    type: UUID
+    required: true
+    description: The identifier of the cart. There is one cart per customer, not one per session.
+  - name: items
+    type: CartItem[]
+    required: true
+    description: Good id and quantity per line. Empty after a reset.
+    references: Good
+    referencesIdentifier: id
+    relationType: hasMany
+---
+
+## Overview
+
+Owned by [[service|OMSService]], persisted in [[container|oms-postgres]] and run as a Temporal workflow so it
+survives between sessions and service restarts.
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Identified by the customer
+
+There is no cart id. The aggregate is loaded by `customer_id`, and if none exists a new empty cart is constructed
+in place — so "add to cart" never has to be preceded by "create cart".
+
+## Mutated by signals
+
+The workflow does not expose setters. Three signals drive it, declared as an enum in `domain/cart/v1/event.proto`:
+
+| Signal | Command | Event |
+|--------|---------|-------|
+| ADD | [[command\|AddCartItem]] | [[event\|CartItemAdded]] |
+| REMOVE | [[command\|RemoveCartItem]] | [[event\|CartItemRemoved]] |
+| RESET | [[command\|ResetCart]] | [[event\|CartReset]] |
+
+Each handler loads the aggregate, calls a domain method, saves, then drains the aggregate's domain events into the
+outbox — all inside one transaction.
+
+## What a cart deliberately is not
+
+- It has no **status**. Status belongs to [[entity|Order]].
+- It has no **price**. Totals are computed on demand by [[query|CalculateCartTotal]] and never stored, so a cart
+  cannot hold a stale price.
+- It has no **delivery information**. That is attached at checkout.
+
+Turning a cart into an order is [[flow|Checkout]].

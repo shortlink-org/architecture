@@ -1,0 +1,41 @@
+---
+id: CartItemAdded
+name: Cart item added
+version: 1.0.0
+summary: |
+  Published when a good is added to a customer's cart.
+owners:
+  - shop-platform
+badges:
+  - content: 'Topic: oms.oms.item_added_event.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: JSON
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Emitted by the [[entity|Cart]] aggregate when `AddItem` succeeds, drained into the outbox in the same transaction as
+the aggregate save.
+
+Payload is the Go struct `ItemAddedEvent` — customer id, the item, and the time it occurred. There is no protobuf
+message for it, which is also why its topic name is malformed.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|oms.oms.item_added_event.v1]] |
+| Broker | Kafka, via the Postgres outbox forwarder |
+| Serialization | JSON (`NewJSONMarshaler`) |
+| Consumers | none today |
+
+> [!NOTE]
+> `ItemAddedEvent.EventType()` returns the bare string `ItemAdded`, and the `EventTopic` enum in
+> `domain/cart/v1/event.proto` claims `oms.cart.item_added.v1`. Neither is the topic — see the channel page.
+
+## Architecture diagram
+
+<NodeGraph />

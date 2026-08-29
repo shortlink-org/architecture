@@ -1,0 +1,55 @@
+---
+id: AssignOrder
+name: Assign order
+version: 1.0.0
+summary: |
+  Binds a package to a courier, either explicitly or by automatic dispatch.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Dispatch
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.AssignOrder`. The one command with two modes, expressed as a protobuf `oneof`:
+
+```proto
+message AssignOrderCommand {
+  string package_id = 1;
+  oneof assignment_type {
+    string courier_id = 2;   // manual
+    bool auto_assign = 3;    // automatic dispatch
+  }
+}
+```
+
+## Automatic dispatch
+
+`DispatchService` filters candidates on status, remaining capacity against `max_load`, and work zone, then sorts by
+Haversine distance from the courier's last known position — read from [[container|delivery-redis]], not from
+Postgres. `AssignmentValidationService` enforces the business rules.
+
+See [[adr|adr-delivery-0004-dispatching-and-geolocation]].
+
+A courier who has stopped reporting has no cached position and is therefore not dispatchable, which is the intended
+behaviour rather than an edge case.
+
+## Effect
+
+Emits [[event|PackageAssigned]] — the only event published to two topics, because
+[[service|CourierEmulationService]] needs a JSON copy.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

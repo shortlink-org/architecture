@@ -1,0 +1,117 @@
+---
+id: Package
+name: Package
+version: 1.0.0
+identifier: package_id
+aggregateRoot: true
+summary: The physical shipment of an order. A state machine from acceptance to a doorstep.
+owners:
+  - shop-platform
+properties:
+  - name: package_id
+    type: UUID
+    required: true
+    description: Aggregate identifier, assigned by the Delivery boundary on acceptance.
+  - name: order_id
+    type: UUID
+    required: true
+    description: The originating order in the Shop boundary. Carried so consumers can look back the other way.
+  - name: customer_id
+    type: UUID
+    required: true
+    description: Who the package is for.
+  - name: pickup_address
+    type: Address
+    required: true
+    description: Where the courier collects.
+  - name: delivery_address
+    type: Address
+    required: true
+    description: Where the courier delivers.
+  - name: delivery_period
+    type: DeliveryPeriod
+    required: true
+    description: The window the delivery is promised in.
+  - name: package_info
+    type: PackageInfo
+    required: true
+    description: Physical characteristics of the shipment.
+  - name: priority
+    type: Priority
+    required: true
+    description: Dispatch priority.
+    enum: ['NORMAL', 'URGENT']
+  - name: status
+    type: PackageStatus
+    required: true
+    description: Where the package is in its lifecycle.
+    enum: ['ACCEPTED', 'ASSIGNED', 'IN_TRANSIT', 'DELIVERED', 'NOT_DELIVERED', 'REQUIRES_HANDLING']
+  - name: courier_id
+    type: UUID
+    required: false
+    description: Set on assignment.
+    references: Courier
+    referencesIdentifier: courier_id
+    relationType: hasOne
+  - name: customer_phone
+    type: string
+    required: false
+    description: Added by a later migration; passed to the courier on assignment.
+  - name: created_at
+    type: timestamp
+    required: true
+    description: When the package was accepted.
+  - name: assigned_at
+    type: timestamp
+    required: false
+    description: When a courier took it.
+  - name: delivered_at
+    type: timestamp
+    required: false
+    description: When it reached the customer.
+  - name: not_delivered_details
+    type: NotDeliveredDetails
+    required: false
+    description: Structured reason for a failed attempt, with a description required when the reason is OTHER.
+---
+
+## Overview
+
+Owned by [[service|DeliveryService]], stored in [[container|delivery-postgres]] (`packages`), defined in
+`delivery/src/domain/model/package/entity.rs`.
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Created on acceptance, not on order
+
+A package does not exist because an order was placed. It exists because the Delivery boundary **accepted** a
+delivery request — [[command|AcceptOrder]]. Orders that never ship never produce one.
+
+## Lifecycle
+
+Every transition emits an event, and all six share [[channel|delivery.package.status.v1]]:
+
+| Transition | Command | Event |
+|-----------|---------|-------|
+| → ACCEPTED | [[command\|AcceptOrder]] | [[event\|PackageAccepted]] |
+| → ASSIGNED | [[command\|AssignOrder]] | [[event\|PackageAssigned]] |
+| → IN_TRANSIT | [[command\|PickUpOrder]] | [[event\|PackageInTransit]] |
+| → DELIVERED | [[command\|DeliverOrder]] | [[event\|PackageDelivered]] |
+| → NOT_DELIVERED | [[command\|DeliverOrder]] | [[event\|PackageNotDelivered]] |
+| → REQUIRES_HANDLING | — | [[event\|PackageRequiresHandling]] |
+
+`REQUIRES_HANDLING` is the escape hatch: a package that cannot proceed automatically and needs a human.
+
+## Failure is structured
+
+An earlier schema stored a free-text `not_delivered_reason`; migration `m20260316_000009` dropped it. The reason is
+now an enum with a description that is required only for `OTHER`, so a downstream system can tell "customer not
+available" from "wrong address" without parsing prose.
+
+## The order reference is not a foreign key
+
+`order_id` points into another boundary and another database. Nothing joins on it — it exists so that
+[[service|OMSService]] can match a status event back to its order, and so tracking can be looked up by order id in
+[[query|GetOrderTracking]].

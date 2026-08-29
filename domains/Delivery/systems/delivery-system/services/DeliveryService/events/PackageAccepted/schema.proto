@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package domain.delivery.events.v1;
+
+import "google/protobuf/timestamp.proto";
+import "delivery/common/v1/common.proto";
+
+// PackageAcceptedEvent - canonical name: delivery.package.accepted.v1
+// Event when a package is accepted into the pool
+message PackageAcceptedEvent {
+  // Package ID
+  string package_id = 1;
+  // Order ID
+  string order_id = 2;
+  // Customer ID
+  string customer_id = 3;
+  // Package status
+  domain.delivery.common.v1.PackageStatus status = 4;
+  // Created at timestamp
+  google.protobuf.Timestamp created_at = 5;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 6;
+}

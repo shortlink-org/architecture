@@ -1,0 +1,111 @@
+---
+id: adr-oms-0005-reliable-domain-events-outbox
+name: "ADR-0005 (oms): Reliable domain event publishing through a Watermill outbox forwarder"
+version: 1.0.0
+summary: "Publish domain events into a Postgres outbox inside the aggregate's transaction and let a forwarder move them to Kafka, closing the window where a commit succeeds but the publish fails."
+status: proposed
+date: 2026-02-03
+owners:
+  - shop-platform
+decisionMakers:
+  - shop-platform
+appliesTo:
+  - type: service
+    id: OMSService
+  - type: container
+    id: oms-postgres
+related:
+  - id: adr-oms-0004-hexagonal-architecture-with-temporal
+---
+
+> Source: [oms/docs/ADR/decisions/0005-reliable-domain-events-outbox.md](https://github.com/shortlink-org/shop/blob/main/oms/docs/ADR/decisions/0005-reliable-domain-events-outbox.md)
+> — written in Russian; this is a translation, not a mechanical copy.
+
+> [!NOTE]
+> **The ADR is marked `Proposed`, but the code implements it.** `oms/internal/di/event_bus.go` builds the bus with
+> `bus.WithTxAwareOutbox(...)` and `bus.WithOutbox(...)` and runs the forwarder, and migration
+> `000005_create_outbox.up.sql` creates the schema. The status was never updated after the work landed.
+
+## Context
+
+Domain events in OMS were published **after** the transaction committed — order creation, cancellation, checkout
+and delivery updates all followed the shape:
+
+```text
+begin tx → save aggregate → COMMIT → publish events
+```
+
+If the publish failed after the commit, the event was simply lost. There was no retry; the code logged and carried
+on. This is the classic unreliable-publishing problem: the aggregate changed and nobody was told.
+
+OMS already used Watermill to consume delivery events from Kafka, so the machinery was partly in place.
+
+### Why go-sdk/cqrs
+
+[`go-sdk/cqrs`](https://github.com/shortlink-org/go-sdk/tree/main/cqrs) supplies what reliable publishing needs:
+
+- an `EventBus` with `bus.WithOutbox(...)` and a `RunForwarder` / `CloseForwarder` daemon, built on
+  `watermill/components/forwarder`
+- canonical message naming, proto/JSON marshalers and tracing
+- **transactional publishing** — `Publish(ctx, evt, bus.WithPublisher(txPublisher))`, where the publisher is bound
+  to the current transaction, so the outbox row lands in the same transaction as the aggregate
+
+## Decision
+
+Use `go-sdk/cqrs` — `EventBus` plus an outbox forwarder.
+
+**Stack**
+
+- `EventBus` with `bus.WithOutbox(...)`, `RunForwarder` / `CloseForwarder`
+- Outbox backend: `watermill-sql` v4, with a publisher created from the request's `pgx.Tx`
+- Forwarder target and existing consumers: `watermill-kafka`
+
+**Flow**
+
+Inside the same unit-of-work transaction, before `Commit`: save the aggregate, then for each domain event call
+`eventBus.Publish(ctx, evt, bus.WithPublisher(txPublisher))`. The commit writes the aggregate and the outbox rows
+together. A forwarder reads the outbox from Postgres and republishes to Kafka.
+
+**In-process subscribers (Temporal)**
+
+Keep the `InMemoryPublisher` and continue publishing to it *after* commit, so the Temporal `OrderEventSubscriber`
+keeps working without subscribing to Kafka. Moving it onto Kafka is possible later.
+
+**Context and transaction**
+
+Publishing **before** commit uses the same `ctx`, which carries the transaction. Publishing **after** commit must
+not: once the transaction is committed or rolled back it is invalid, and a publisher that pulls the transaction out
+of the context and issues database operations against it is a real hazard. Use a context without the transaction —
+`context.WithoutCancel(ctx)` or a fresh one.
+
+## Consequences
+
+**Upsides**
+
+- At-least-once delivery: once the commit succeeds the events are in the database and will reach Kafka, with the
+  forwarder retrying.
+- No "commit succeeded, publish failed" window.
+- Compatible with the Watermill and Kafka usage OMS already had; `watermill-sql` v4 supports `pgx`.
+
+**Downsides**
+
+- More dependencies: `watermill-sql/v4`, `watermill/components/forwarder`, `go-sdk/cqrs`.
+- A forwarder has to be running, and the outbox schema has to be created by migration — the library does not create
+  tables.
+- Handlers change shape: publish before commit, and notify in-memory subscribers after it.
+
+## How it actually landed
+
+| ADR proposes | In the code |
+|---|---|
+| outbox topic e.g. `oms_domain_events_outbox` | `oms_outbox` |
+| forwarder consumer group | `oms-outbox-forwarder` |
+| proto **or** JSON marshaler | `NewJSONMarshaler` |
+| topic per event type | yes — derived by the namer, see [[domain\|Shop]] for where those names drift from ADR-0002 |
+
+## References
+
+- [go-sdk/cqrs](https://github.com/shortlink-org/go-sdk/tree/main/cqrs)
+- [Watermill — Forwarder (outbox)](https://watermill.io/advanced/forwarder)
+- [watermill-sql v4](https://pkg.go.dev/github.com/ThreeDotsLabs/watermill-sql/v4/pkg/sql)
+- [[adr|adr-oms-0004-hexagonal-architecture-with-temporal]] — event publisher as a port, outbox as an adapter

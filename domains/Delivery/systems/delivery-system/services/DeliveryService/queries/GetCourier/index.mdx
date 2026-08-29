@@ -1,0 +1,35 @@
+---
+id: GetCourier
+name: Get courier
+version: 1.0.0
+summary: |
+  Returns a single courier by id.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Courier
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.GetCourier`. Returns the [[entity|Courier]] aggregate from [[container|delivery-postgres]].
+
+## Contract
+
+```proto
+rpc GetCourier(GetCourierRequest) returns (GetCourierResponse);
+```
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,46 @@
+---
+id: PackageAccepted
+name: Package accepted
+version: 1.0.0
+summary: |
+  A delivery request became a package. The first event in the package lifecycle.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: delivery.package.status.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Emitted when [[command|AcceptOrder]] succeeds and a [[entity|Package]] enters the pool. Carries package id, order
+id, customer id, status and both `created_at` and `occurred_at`.
+
+This is the point where the [[domain|Delivery]] boundary takes ownership. The `package_id` it mints is returned
+synchronously to [[service|OMSService]] as the gRPC response, and also travels on this event.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|delivery.package.status.v1]] |
+| Key | `package_id` |
+| Serialization | Protobuf |
+| Consumer | [[service\|OMSService]] |
+
+> [!NOTE]
+> The protobuf comment names this `delivery.package.accepted.v1`. That topic does not exist — all six package
+> events share the consolidated status topic and are told apart by an `event_type` header.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

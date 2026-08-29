@@ -1,0 +1,51 @@
+---
+id: OrderDeliveryStatusUpdated
+name: Order delivery status updated
+version: 1.0.0
+summary: |
+  The order's own restatement of a delivery status change heard from the Delivery boundary.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: oms.order.delivery_status_updated_event.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf shape, JSON on the wire
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Carries order id, package id, the new delivery status, the courier id when one is assigned, and the update time.
+
+> [!WARNING]
+> The protobuf comment on this message says it is "received from delivery service". It is not. This event is
+> **published by** [[service|OMSService]] from `usecases/order/event/on_delivery_status/handler.go`, after it
+> consumes a package status change off [[channel|delivery.package.status.v1]] and applies it to the
+> [[entity|Order]].
+
+This is the translation point between the two boundaries. A consumer that cares about orders subscribes here and
+never needs to know that [[domain|Delivery]] exists or that its topics are consolidated.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|oms.order.delivery_status_updated_event.v1]] |
+| Serialization | JSON, from the protobuf-defined shape |
+| Consumers | none |
+
+## Ordering and duplicates
+
+The handler drops the incoming message if it is duplicate or stale for the order's current state before publishing
+this event, so the stream reflects applied transitions rather than everything that arrived.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

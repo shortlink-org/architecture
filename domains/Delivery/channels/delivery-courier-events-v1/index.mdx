@@ -1,0 +1,31 @@
+---
+id: delivery.courier.events.v1
+name: delivery.courier.events.v1
+version: 1.0.0
+summary: |
+  Courier lifecycle: registration and status changes.
+owners:
+  - shop-platform
+address: delivery.courier.events.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|DeliveryService]], carrying [[event|CourierRegistered]] and [[event|CourierStatusChanged]].
+No consumer today.
+
+Low-volume lifecycle facts, deliberately kept apart from the high-frequency location stream so the two can have
+different retention.
+
+## Configuration
+
+| | |
+|---|---|
+| Partitions | 3 |
+| Key | `courier_id` |
+| Retention | 7 days |
+
+<NodeGraph />

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package domain.delivery.events.v1;
+
+import "google/protobuf/timestamp.proto";
+import "delivery/common/v1/common.proto";
+
+// PackageDeliveredEvent - canonical name: delivery.package.delivered.v1
+// Event when package is successfully delivered
+message PackageDeliveredEvent {
+  // Package ID
+  string package_id = 1;
+  // Order ID
+  string order_id = 2;
+  // Courier ID
+  string courier_id = 3;
+  // Package status
+  domain.delivery.common.v1.PackageStatus status = 4;
+  // Delivered at timestamp
+  google.protobuf.Timestamp delivered_at = 5;
+  // Delivery location
+  domain.delivery.common.v1.Location delivery_location = 6;
+  // Optional: delivery confirmation photo
+  bytes photo = 7;
+  // Optional: customer signature
+  bytes customer_signature = 8;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 9;
+}

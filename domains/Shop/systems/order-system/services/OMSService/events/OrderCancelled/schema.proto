@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package domain.order.events.v1;
+
+option go_package = "github.com/shortlink-org/shop/oms/internal/domain/order/v1/events/v1";
+
+import "google/protobuf/timestamp.proto";
+import "domain/order/v1/common/common.proto";
+
+// OrderCancelled event - canonical name: oms.order.cancelled.v1
+// Published when an order is cancelled
+message OrderCancelled {
+  // Order ID
+  string order_id = 1;
+  // Customer ID
+  string customer_id = 2;
+  // Order status
+  domain.order.common.v1.OrderStatus status = 3;
+  // Cancellation reason (optional)
+  string reason = 4;
+  // Cancelled at timestamp
+  google.protobuf.Timestamp cancelled_at = 5;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 6;
+  // Aggregate version after the mutation was applied
+  int32 aggregate_version = 7;
+}

@@ -1,0 +1,53 @@
+---
+id: OMSGraphQL
+name: OMS GraphQL Subgraph
+version: 1.0.0
+summary: |
+  Go/Connect subgraph that adapts the OMS gRPC API into the federated shop graph. Carts and orders.
+owners:
+  - shop-platform
+badges:
+  - content: Go
+    backgroundColor: blue
+    textColor: blue
+  - content: Cosmo Connect
+    backgroundColor: purple
+    textColor: purple
+  - content: Adapter
+    backgroundColor: gray
+    textColor: gray
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/shop/tree/main/oms-graphql'
+---
+
+## Overview
+
+Registered in the router as the `carts` subgraph on port 4011. It translates federated GraphQL operations into
+[[service|OMSService]] gRPC calls and nothing more.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Endpoints
+
+| | |
+|---|---|
+| gRPC/Connect handler | `:4011` |
+| Health | `/healthz` |
+| Metrics | `/metrics` |
+
+Contracts are generated with `buf` from the OMS protobuf definitions, so the subgraph cannot drift from the service
+it adapts without a regeneration step.
+
+## Connect gRPC, not HTTP
+
+[[adr|adr-oms-graphql-0003-migrate-to-cosmo-connect-grpc]] moved this subgraph onto Cosmo's Connect gRPC transport.
+The router reaches it over gRPC using a schema, proto and mapping triple committed in `pkg/`, rather than
+introspecting an HTTP GraphQL endpoint.
+
+## No state of its own
+
+No database, no cache, no events, no business rules. Cart and order behaviour lives entirely in
+[[service|OMSService]].

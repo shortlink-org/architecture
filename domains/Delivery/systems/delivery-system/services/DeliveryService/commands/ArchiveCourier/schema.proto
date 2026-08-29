@@ -1,0 +1,501 @@
+syntax = "proto3";
+
+package infrastructure.rpc.delivery.v1;
+
+option go_package = "github.com/shortlink-org/shortlink/boundaries/shop/delivery/infrastructure/rpc/delivery/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// DeliveryService provides gRPC API for delivery operations
+service DeliveryService {
+  // ==================== Courier Queries ====================
+  // Retrieving courier data
+  
+  // GetCourier retrieves a single courier by ID
+  rpc GetCourier(GetCourierRequest) returns (GetCourierResponse);
+  
+  // GetCourierPool retrieves couriers with filtering and pagination
+  rpc GetCourierPool(GetCourierPoolRequest) returns (GetCourierPoolResponse);
+  
+  // ==================== Courier Lifecycle ====================
+  // Courier lifecycle: registration, activation, archival
+  
+  // RegisterCourier registers a new courier in the system
+  rpc RegisterCourier(RegisterCourierRequest) returns (RegisterCourierResponse);
+  
+  // ActivateCourier sets courier status to FREE (available for orders)
+  rpc ActivateCourier(ActivateCourierRequest) returns (ActivateCourierResponse);
+  
+  // DeactivateCourier sets courier status to UNAVAILABLE
+  rpc DeactivateCourier(DeactivateCourierRequest) returns (DeactivateCourierResponse);
+  
+  // ArchiveCourier performs soft delete (sets status to ARCHIVED)
+  rpc ArchiveCourier(ArchiveCourierRequest) returns (ArchiveCourierResponse);
+  
+  // ==================== Courier Profile ====================
+  // Managing courier profile
+  
+  // UpdateContactInfo updates courier phone and email
+  rpc UpdateContactInfo(UpdateContactInfoRequest) returns (UpdateContactInfoResponse);
+  
+  // UpdateWorkSchedule updates courier work hours and zone
+  rpc UpdateWorkSchedule(UpdateWorkScheduleRequest) returns (UpdateWorkScheduleResponse);
+  
+  // ChangeTransportType changes courier transport and recalculates max_load
+  rpc ChangeTransportType(ChangeTransportTypeRequest) returns (ChangeTransportTypeResponse);
+  
+  // ==================== Order Operations ====================
+  // Order-related operations
+  
+  // AcceptOrder accepts an order from OMS for delivery
+  rpc AcceptOrder(AcceptOrderRequest) returns (AcceptOrderResponse);
+  
+  // AssignOrder assigns a package to a courier
+  rpc AssignOrder(AssignOrderRequest) returns (AssignOrderResponse);
+  
+  // PickUpOrder confirms package pickup by courier
+  rpc PickUpOrder(PickUpOrderRequest) returns (PickUpOrderResponse);
+  
+  // DeliverOrder confirms delivery or failed delivery attempt by courier
+  rpc DeliverOrder(DeliverOrderRequest) returns (DeliverOrderResponse);
+  
+  // ==================== Courier Deliveries ====================
+  // Courier delivery history
+  
+  // GetCourierDeliveries retrieves recent deliveries for a courier
+  rpc GetCourierDeliveries(GetCourierDeliveriesRequest) returns (GetCourierDeliveriesResponse);
+
+  // GetOrderTracking returns live delivery tracking by OMS order ID
+  rpc GetOrderTracking(GetOrderTrackingRequest) returns (GetOrderTrackingResponse);
+
+  // SubscribeOrderTracking streams tracking snapshots whenever delivery state changes
+  rpc SubscribeOrderTracking(GetOrderTrackingRequest) returns (stream GetOrderTrackingResponse);
+
+  // ==================== Random Address ====================
+  // GetRandomAddress returns a random address within the configured region (e.g. Berlin bbox)
+  rpc GetRandomAddress(GetRandomAddressRequest) returns (GetRandomAddressResponse);
+}
+
+// ==================== GetRandomAddress ====================
+
+// GetRandomAddressRequest is empty; bounds come from server config (env)
+message GetRandomAddressRequest {}
+
+// GetRandomAddressResponse returns one random address within configured bbox
+message GetRandomAddressResponse {
+  Address address = 1;
+}
+
+// ==================== Common Types ====================
+
+// Location represents a GPS location
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+// TransportType defines courier transport modes
+enum TransportType {
+  TRANSPORT_TYPE_UNSPECIFIED = 0;
+  TRANSPORT_TYPE_WALKING = 1;
+  TRANSPORT_TYPE_BICYCLE = 2;
+  TRANSPORT_TYPE_MOTORCYCLE = 3;
+  TRANSPORT_TYPE_CAR = 4;
+}
+
+// CourierStatus defines courier availability states
+enum CourierStatus {
+  COURIER_STATUS_UNSPECIFIED = 0;
+  COURIER_STATUS_UNAVAILABLE = 1;
+  COURIER_STATUS_FREE = 2;
+  COURIER_STATUS_BUSY = 3;
+  COURIER_STATUS_ARCHIVED = 4;
+}
+
+// WorkHours defines courier working schedule
+message WorkHours {
+  string start_time = 1; // "09:00" format
+  string end_time = 2;   // "18:00" format
+  repeated int32 work_days = 3; // [1,2,3,4,5] - Monday to Friday
+}
+
+// Pagination request parameters
+message Pagination {
+  int32 page = 1;
+  int32 page_size = 2; // Max 100
+}
+
+// PaginationInfo response metadata
+message PaginationInfo {
+  int32 current_page = 1;
+  int32 page_size = 2;
+  int32 total_pages = 3;
+  int32 total_items = 4;
+}
+
+// ==================== RegisterCourier ====================
+
+// RegisterCourierRequest contains data for new courier registration
+message RegisterCourierRequest {
+  string name = 1;
+  string phone = 2;
+  string email = 3;
+  TransportType transport_type = 4;
+  double max_distance_km = 5;
+  string work_zone = 6;
+  WorkHours work_hours = 7;
+  optional string push_token = 8;
+}
+
+// RegisterCourierResponse returns registered courier data
+message RegisterCourierResponse {
+  string courier_id = 1;
+  CourierStatus status = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+// ==================== GetCourierPool ====================
+
+// GetCourierPoolRequest contains filters for courier pool query
+message GetCourierPoolRequest {
+  repeated CourierStatus status_filter = 1;
+  repeated TransportType transport_type_filter = 2;
+  string zone_filter = 3;
+  bool available_only = 4;
+  bool include_location = 5;
+  Pagination pagination = 6;
+}
+
+// Courier represents a courier in the pool response
+message Courier {
+  string courier_id = 1;
+  string name = 2;
+  string phone = 3;
+  string email = 4;
+  TransportType transport_type = 5;
+  double max_distance_km = 6;
+  CourierStatus status = 7;
+  int32 current_load = 8;
+  int32 max_load = 9;
+  double rating = 10;
+  WorkHours work_hours = 11;
+  string work_zone = 12;
+  optional Location current_location = 13;
+  int32 successful_deliveries = 14;
+  int32 failed_deliveries = 15;
+  google.protobuf.Timestamp created_at = 16;
+  optional google.protobuf.Timestamp last_active_at = 17;
+}
+
+// GetCourierPoolResponse returns list of couriers
+message GetCourierPoolResponse {
+  repeated Courier couriers = 1;
+  int32 total_count = 2;
+  PaginationInfo pagination = 3;
+}
+
+// ==================== AcceptOrder ====================
+
+// Address represents a physical address for pickup/delivery
+message Address {
+  string street = 1;
+  string city = 2;
+  string country = 4;
+  double latitude = 5;
+  double longitude = 6;
+}
+
+// DeliveryPeriod represents the desired delivery time window
+message DeliveryPeriod {
+  google.protobuf.Timestamp start_time = 1;
+  google.protobuf.Timestamp end_time = 2;
+}
+
+// PackageInfo contains physical characteristics of the package
+message PackageInfo {
+  double weight_kg = 1;
+}
+
+// Priority level for delivery
+enum Priority {
+  PRIORITY_UNSPECIFIED = 0;
+  PRIORITY_NORMAL = 1;
+  PRIORITY_URGENT = 2;
+}
+
+// PackageStatus represents the delivery lifecycle state
+enum PackageStatus {
+  PACKAGE_STATUS_UNSPECIFIED = 0;
+  PACKAGE_STATUS_ACCEPTED = 1;
+  PACKAGE_STATUS_IN_POOL = 2;
+  PACKAGE_STATUS_ASSIGNED = 3;
+  PACKAGE_STATUS_IN_TRANSIT = 4;
+  PACKAGE_STATUS_DELIVERED = 5;
+  PACKAGE_STATUS_NOT_DELIVERED = 6;
+  PACKAGE_STATUS_REQUIRES_HANDLING = 7;
+}
+
+// RecipientContacts contains recipient contact details for delivery
+message RecipientContacts {
+  string recipient_name = 1;
+  string recipient_phone = 2;
+  string recipient_email = 3;
+}
+
+// AcceptOrderRequest contains data to accept an order for delivery
+message AcceptOrderRequest {
+  string order_id = 1;
+  string customer_id = 2;
+  Address pickup_address = 3;
+  Address delivery_address = 4;
+  DeliveryPeriod delivery_period = 5;
+  PackageInfo package_info = 6;
+  Priority priority = 7;
+  optional RecipientContacts recipient_contacts = 8;
+}
+
+// AcceptOrderResponse returns the created package data
+message AcceptOrderResponse {
+  string package_id = 1;
+  PackageStatus status = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+// ==================== AssignOrder ====================
+
+// AssignOrderRequest contains order assignment data
+message AssignOrderRequest {
+  string package_id = 1;
+  oneof assignment_type {
+    string courier_id = 2;  // Manual assignment
+    bool auto_assign = 3;   // Auto dispatch
+  }
+}
+
+// AssignOrderResponse returns assignment result
+message AssignOrderResponse {
+  string package_id = 1;
+  string courier_id = 2;
+  google.protobuf.Timestamp assigned_at = 3;
+  int32 estimated_delivery_minutes = 4;
+}
+
+// ==================== GetCourier ====================
+
+// GetCourierRequest contains courier ID to retrieve
+message GetCourierRequest {
+  string courier_id = 1;
+  bool include_location = 2;
+}
+
+// GetCourierResponse returns courier data
+message GetCourierResponse {
+  Courier courier = 1;
+}
+
+// ==================== ActivateCourier ====================
+
+// ActivateCourierRequest contains courier ID to activate
+message ActivateCourierRequest {
+  string courier_id = 1;
+}
+
+// ActivateCourierResponse returns activation result
+message ActivateCourierResponse {
+  string courier_id = 1;
+  CourierStatus status = 2;
+  google.protobuf.Timestamp activated_at = 3;
+}
+
+// ==================== DeactivateCourier ====================
+
+// DeactivateCourierRequest contains courier ID to deactivate
+message DeactivateCourierRequest {
+  string courier_id = 1;
+  optional string reason = 2;
+}
+
+// DeactivateCourierResponse returns deactivation result
+message DeactivateCourierResponse {
+  string courier_id = 1;
+  CourierStatus status = 2;
+  google.protobuf.Timestamp deactivated_at = 3;
+}
+
+// ==================== ArchiveCourier ====================
+
+// ArchiveCourierRequest contains courier ID to archive
+message ArchiveCourierRequest {
+  string courier_id = 1;
+  optional string reason = 2;
+}
+
+// ArchiveCourierResponse returns archival result
+message ArchiveCourierResponse {
+  string courier_id = 1;
+  CourierStatus status = 2;
+  google.protobuf.Timestamp archived_at = 3;
+}
+
+// ==================== UpdateContactInfo ====================
+
+// UpdateContactInfoRequest contains new contact information
+message UpdateContactInfoRequest {
+  string courier_id = 1;
+  optional string phone = 2;
+  optional string email = 3;
+  optional string push_token = 4;
+}
+
+// UpdateContactInfoResponse returns update result
+message UpdateContactInfoResponse {
+  string courier_id = 1;
+  string phone = 2;
+  string email = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+// ==================== UpdateWorkSchedule ====================
+
+// UpdateWorkScheduleRequest contains new work schedule
+message UpdateWorkScheduleRequest {
+  string courier_id = 1;
+  optional WorkHours work_hours = 2;
+  optional string work_zone = 3;
+  optional double max_distance_km = 4;
+}
+
+// UpdateWorkScheduleResponse returns update result
+message UpdateWorkScheduleResponse {
+  string courier_id = 1;
+  WorkHours work_hours = 2;
+  string work_zone = 3;
+  double max_distance_km = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+// ==================== ChangeTransportType ====================
+
+// ChangeTransportTypeRequest contains new transport type
+message ChangeTransportTypeRequest {
+  string courier_id = 1;
+  TransportType transport_type = 2;
+}
+
+// ChangeTransportTypeResponse returns update result with recalculated max_load
+message ChangeTransportTypeResponse {
+  string courier_id = 1;
+  TransportType transport_type = 2;
+  int32 max_load = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+// ==================== GetCourierDeliveries ====================
+
+// GetCourierDeliveriesRequest contains courier ID and pagination
+message GetCourierDeliveriesRequest {
+  string courier_id = 1;
+  int32 limit = 2;  // Max number of deliveries to return (default 5)
+}
+
+// DeliveryRecord represents a completed or in-progress delivery
+message DeliveryRecord {
+  string package_id = 1;
+  string order_id = 2;
+  PackageStatus status = 3;
+  Address pickup_address = 4;
+  Address delivery_address = 5;
+  google.protobuf.Timestamp assigned_at = 6;
+  optional google.protobuf.Timestamp delivered_at = 7;
+  Priority priority = 8;
+}
+
+// GetCourierDeliveriesResponse returns list of courier's deliveries
+message GetCourierDeliveriesResponse {
+  repeated DeliveryRecord deliveries = 1;
+  int32 total_count = 2;  // Total deliveries for this courier
+}
+
+// ==================== GetOrderTracking ====================
+
+// GetOrderTrackingRequest contains OMS order ID
+message GetOrderTrackingRequest {
+  string order_id = 1;
+}
+
+// TrackingCourier represents courier details for customer tracking
+message TrackingCourier {
+  string courier_id = 1;
+  string name = 2;
+  string phone = 3;
+  TransportType transport_type = 4;
+  CourierStatus status = 5;
+  optional Location current_location = 6;
+  optional google.protobuf.Timestamp last_active_at = 7;
+}
+
+// GetOrderTrackingResponse returns live tracking information for a delivery order
+message GetOrderTrackingResponse {
+  string order_id = 1;
+  string package_id = 2;
+  PackageStatus status = 3;
+  TrackingCourier courier = 4;
+  optional int32 estimated_minutes_remaining = 5;
+  optional double distance_km_remaining = 6;
+  optional google.protobuf.Timestamp estimated_arrival_at = 7;
+  optional google.protobuf.Timestamp assigned_at = 8;
+  optional google.protobuf.Timestamp delivered_at = 9;
+}
+
+// ==================== PickUpOrder ====================
+
+// PickUpOrderRequest contains data for confirming package pickup
+message PickUpOrderRequest {
+  string package_id = 1;
+  string courier_id = 2;
+  Location pickup_location = 3;
+}
+
+// PickUpOrderResponse returns pickup confirmation result
+message PickUpOrderResponse {
+  string package_id = 1;
+  PackageStatus status = 2;
+  google.protobuf.Timestamp picked_up_at = 3;
+}
+
+// ==================== DeliverOrder ====================
+
+// NotDeliveredReason defines reasons for failed delivery
+enum NotDeliveredReason {
+  NOT_DELIVERED_REASON_UNSPECIFIED = 0;
+  NOT_DELIVERED_REASON_CUSTOMER_UNAVAILABLE = 1;
+  NOT_DELIVERED_REASON_WRONG_ADDRESS = 2;
+  NOT_DELIVERED_REASON_REFUSED = 3;
+  NOT_DELIVERED_REASON_ACCESS_DENIED = 4;
+  NOT_DELIVERED_REASON_OTHER = 5;
+}
+
+// NotDeliveredDetails contains reason and optional description (required if reason == OTHER)
+message NotDeliveredDetails {
+  NotDeliveredReason reason = 1;
+  string description = 2; // required if reason == OTHER
+}
+
+// DeliverOrderRequest contains data for confirming delivery
+message DeliverOrderRequest {
+  string package_id = 1;
+  string courier_id = 2;
+  bool is_delivered = 3;
+  NotDeliveredDetails not_delivered_details = 4; // required if is_delivered == false
+  Location confirmation_location = 5;
+  bytes photo_proof = 6;
+  bytes signature = 7;
+  string notes = 8;
+}
+
+// DeliverOrderResponse returns delivery confirmation result
+message DeliverOrderResponse {
+  string package_id = 1;
+  PackageStatus status = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}

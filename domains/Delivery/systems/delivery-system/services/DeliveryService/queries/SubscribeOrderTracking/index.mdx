@@ -1,0 +1,47 @@
+---
+id: SubscribeOrderTracking
+name: Subscribe order tracking
+version: 1.0.0
+summary: |
+  Streams a new tracking snapshot whenever delivery state changes. Server-streaming.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Streaming
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.SubscribeOrderTracking` — the only server-streaming RPC in the catalogue.
+
+## Contract
+
+```proto
+rpc SubscribeOrderTracking(GetOrderTrackingRequest) returns (stream GetOrderTrackingResponse);
+```
+
+Same request as [[query|GetOrderTracking]]; instead of one snapshot it pushes a new one on every state change.
+
+## Why it needs Redis pub/sub
+
+The state change happens in whichever replica handled the transition. The stream is held open by whichever replica
+the customer connected to. These are rarely the same pod.
+
+`infrastructure/messaging/tracking_pubsub.rs` bridges them: transitions publish on a per-order Redis channel and
+open streams subscribe to it. Without that, live tracking would only work when both ends happened to land together.
+
+This is why [[container|delivery-redis]] is not merely a cache.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

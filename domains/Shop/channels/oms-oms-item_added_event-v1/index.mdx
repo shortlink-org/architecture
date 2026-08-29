@@ -1,0 +1,40 @@
+---
+id: oms.oms.item_added_event.v1
+name: oms.oms.item_added_event.v1
+version: 1.0.0
+summary: |
+  Carries CartItemAdded. The topic name does not follow ADR-0002 — see below.
+owners:
+  - shop-platform
+address: oms.oms.item_added_event.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|OMSService]] carrying [[event|CartItemAdded]]. **No consumer today** — the cart stream is
+published because the aggregate produces it, not because anything subscribes.
+
+## The name is not what the code says it is
+
+> [!WARNING]
+> Three different names exist for this stream and only the one above is real.
+>
+> | Source | Claims |
+> |--------|--------|
+> | `EventTopic` enum in `domain/cart/v1/event.proto` | `oms.cart.item_added.v1` |
+> | `EventType()` on the Go struct | `Itemadded` |
+> | **What the bus actually publishes** | **the address above** |
+>
+> The bus does not consult `EventType()`. It calls `namer.EventName(evt)`
+> (`go-sdk/cqrs/bus/event_bus.go:130`). Because the cart events are plain Go structs rather than protobuf
+> messages, the namer cannot read an aggregate from a protobuf package, so it falls back to the service name — which
+> is why the aggregate segment is `oms` instead of `cart`, and why the Go type name survives verbatim, `Event`
+> suffix included.
+
+Fixing this means making the cart events protobuf messages in a `domain.cart.…` package, as the order events
+already are. Until then, a consumer must subscribe to the address above.
+
+<NodeGraph />

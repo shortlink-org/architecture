@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package domain.delivery.events.v1;
+
+import "google/protobuf/timestamp.proto";
+import "delivery/common/v1/common.proto";
+
+// PackageInTransitEvent - canonical name: delivery.package.in_transit.v1
+// Event when package is picked up and in transit
+message PackageInTransitEvent {
+  // Package ID
+  string package_id = 1;
+  // Order ID (from OMS, for consumer lookup)
+  string order_id = 2;
+  // Courier ID
+  string courier_id = 3;
+  // Package status
+  domain.delivery.common.v1.PackageStatus status = 4;
+  // In transit at timestamp
+  google.protobuf.Timestamp in_transit_at = 5;
+  // Courier location
+  domain.delivery.common.v1.Location courier_location = 6;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 7;
+}

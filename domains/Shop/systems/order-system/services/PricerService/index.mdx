@@ -1,0 +1,75 @@
+---
+id: PricerService
+name: Pricer Service
+version: 1.0.0
+summary: |
+  Calculates cart tax and discounts by evaluating Rego policies. Pure computation — no state, no events.
+owners:
+  - shop-platform
+receives:
+  - id: CalculateCartTotal
+badges:
+  - content: Go
+    backgroundColor: blue
+    textColor: blue
+  - content: OPA / Rego
+    backgroundColor: purple
+    textColor: purple
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/shop/tree/main/pricer'
+---
+
+## Overview
+
+One question, one answer: what does this cart cost. [[service|OMSService]] asks over gRPC; the answer comes from
+evaluating Open Policy Agent policies, not from Go code.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Why policy instead of code
+
+Discount rules change on a business cadence, not a release cadence. Expressing them in Rego means a new rule is a
+policy file, not a deploy of the order engine.
+
+Two rule shapes exist today:
+
+| Rule | Behaviour |
+|------|-----------|
+| Quantity discount | "3 for 2" — `min_quantity_for_discount` |
+| Combination discount | `combination_discount_percent` off when the cart holds 2+ distinct goods |
+
+Deliberately absent: brand-based and time-based rules. That constraint is what keeps the input minimal — a rule
+needs only `productId`, `quantity` and `price` per item, so pricing stays a pure function of the cart.
+
+## Money crosses the wire as strings
+
+Every monetary field in the contract is a `string`, not a float:
+
+```proto
+message CartItem {
+  string product_id = 1;  // UUID as a string
+  int32 quantity = 2;
+  string price = 3;       // Decimal as a string to preserve precision
+}
+```
+
+The response carries `total_tax`, `total_discount`, `final_price` and the list of `policies` that fired — so a
+caller can show *why* a total came out the way it did, not just the number.
+
+## Two modes
+
+| Mode | When |
+|------|------|
+| gRPC server | default |
+| CLI batch | `GRPC_SERVER_ENABLED=false` — processes cart files from `cart_files` in `config.yaml` |
+
+## Safe to lose
+
+[[service|OMSService]] constructs its client with a fallback and continues without pricing if this service is
+unreachable. An outage degrades totals; it does not stop orders.

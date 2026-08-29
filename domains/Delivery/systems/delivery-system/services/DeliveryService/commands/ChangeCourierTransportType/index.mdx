@@ -1,0 +1,39 @@
+---
+id: ChangeCourierTransportType
+name: Change courier transport type
+version: 1.0.0
+summary: |
+  Changes how a courier travels, recalculating their capacity.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Courier
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.ChangeTransportType`.
+
+## It recalculates max_load
+
+Capacity is derived from transport, so this command recomputes `max_load` rather than expecting the caller to keep
+the two consistent. Changing transport therefore changes how much a [[entity|Courier]] can carry, and can make an
+already-loaded courier ineligible for further assignments.
+
+## Effect
+
+No dedicated event.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

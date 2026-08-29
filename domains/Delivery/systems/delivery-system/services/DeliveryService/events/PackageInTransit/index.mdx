@@ -1,0 +1,41 @@
+---
+id: PackageInTransit
+name: Package in transit
+version: 1.0.0
+summary: |
+  A courier collected the package and is moving.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: delivery.package.status.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Emitted when [[command|PickUpOrder]] succeeds — in practice, when the courier side confirms pickup on
+[[channel|delivery.order.order_picked_up.v1]].
+
+Carries the courier's location at pickup, and the `order_id` explicitly "for consumer lookup" — the payload is
+shaped so [[service|OMSService]] can find the order without holding a package-to-order map.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|delivery.package.status.v1]] |
+| Key | `package_id` |
+| Consumer | [[service\|OMSService]] |
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

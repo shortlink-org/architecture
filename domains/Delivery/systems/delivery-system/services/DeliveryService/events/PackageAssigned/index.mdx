@@ -1,0 +1,49 @@
+---
+id: PackageAssigned
+name: Package assigned
+version: 1.0.0
+summary: |
+  A package was bound to a courier. The only event published to two topics.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: delivery.package.status.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf + JSON
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Emitted by [[command|AssignOrder]], whether the courier was chosen manually or by automatic dispatch.
+
+Unusually, it carries the pickup and delivery addresses, the delivery period and the customer phone — everything a
+courier needs to act, so the courier side does not have to call back for details.
+
+## Published twice, on purpose
+
+| Topic | Payload | For |
+|-------|---------|-----|
+| [[channel\|delivery.package.status.v1]] | Protobuf | [[service\|OMSService]] — authoritative |
+| [[channel\|delivery.order.assigned.v1]] | JSON | [[service\|CourierEmulationService]] — compatibility |
+
+Both are written in the same publish call. If they ever disagree, the protobuf copy on the status topic is the
+source of truth.
+
+## Delivery
+
+| | |
+|---|---|
+| Key | `package_id` |
+| Consumers | [[service\|OMSService]], [[service\|CourierEmulationService]] |
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

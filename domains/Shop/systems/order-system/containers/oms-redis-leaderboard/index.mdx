@@ -1,0 +1,52 @@
+---
+id: oms-redis-leaderboard
+name: OMS leaderboard read model
+version: 1.0.0
+container_type: cache
+technology: redis
+authoritative: false
+access_mode: readWrite
+classification: internal
+owners:
+  - shop-platform
+summary: Kafka-driven ranking of goods by completed orders. A projection — rebuildable, allowed to lag.
+---
+
+<NodeGraph />
+
+## What is this?
+
+The store behind [[query|GetGoodsLeaderboard]]. It is **not** a cache in front of a query over `orders` — no such
+query exists. The ranking is built by consuming [[event|OrderCompleted]] off
+[[channel|oms.order.completed.v1]] and folding each completed order into Redis sorted sets.
+
+See [[adr|adr-shop-0006-goods-leaderboard-read-model]].
+
+## Keys and retention
+
+Key prefix `shop:lb:v1:{goods}` — the hash tag keeps every key of the model on one Redis slot, so the update can be
+a single atomic Lua script rather than a cross-slot transaction.
+
+| Window | Retention |
+|--------|-----------|
+| day | 45 days |
+| week | 400 days |
+| month | 800 days |
+| processed-event marker | 365 days |
+
+## Idempotency
+
+Kafka delivers at least once, and a leaderboard that double-counts a redelivered order is silently wrong. The Lua
+script guards on a per-event key built from the order id **and its aggregate version**:
+
+```text
+shop:lb:v1:{goods}:processed:oms.order.completed.v1:<order_id>:<aggregate_version>
+```
+
+If the key exists the script returns `0` and changes nothing. Because the key includes the aggregate version, a
+genuine later state change on the same order is still counted — it is redelivery that is suppressed, not history.
+
+## Losing it is survivable
+
+Everything here is derived. If the instance is lost the ranking can be rebuilt by replaying the topic; no order
+data is at risk.

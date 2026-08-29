@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package domain.order.events.v1;
+
+option go_package = "github.com/shortlink-org/shop/oms/internal/domain/order/v1/events/v1";
+
+import "google/protobuf/timestamp.proto";
+import "domain/order/v1/common/common.proto";
+
+// OrderDeliveryFailedEvent - canonical name: oms.order.delivery_failed.v1
+// Event when delivery failed
+// This event is received from delivery service
+message OrderDeliveryFailedEvent {
+  // Order ID
+  string order_id = 1;
+  // Package ID
+  string package_id = 2;
+  // Courier ID
+  string courier_id = 3;
+  // Not delivered details (reason; description required if reason == OTHER)
+  domain.order.common.v1.NotDeliveredDetails not_delivered_details = 4;
+  // Timestamp when delivery failed
+  google.protobuf.Timestamp failed_at = 5;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 6;
+  // Aggregate version after the mutation was applied
+  int32 aggregate_version = 7;
+}

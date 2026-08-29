@@ -1,0 +1,35 @@
+---
+id: CartReset
+name: Cart reset
+version: 1.0.0
+summary: |
+  Published when a cart is emptied — by the customer, or by checkout consuming it.
+owners:
+  - shop-platform
+badges:
+  - content: 'Topic: oms.oms.reset_event.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: JSON
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Emitted by the [[entity|Cart]] aggregate on `Reset`.
+
+The event does not say *why* the cart was emptied. A customer clearing their cart and a successful checkout both
+produce it; only the presence of a matching [[event|OrderCreated]] distinguishes them.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|oms.oms.reset_event.v1]] |
+| Serialization | JSON |
+| Consumers | none today |
+
+## Architecture diagram
+
+<NodeGraph />

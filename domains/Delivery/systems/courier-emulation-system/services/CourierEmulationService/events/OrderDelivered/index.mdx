@@ -1,0 +1,37 @@
+---
+id: OrderDelivered
+name: Order delivered
+version: 1.0.0
+summary: |
+  The courier reports the outcome of a delivery attempt — success or failure.
+owners:
+  - shop-platform
+badges:
+  - content: 'Topic: delivery.order.order_delivered.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: JSON
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Published by [[service|CourierEmulationService]], consumed by [[service|DeliveryService]].
+
+Despite the name it carries the **outcome**, not only success. A failed attempt lands the [[entity|Package]] in
+`NOT_DELIVERED` with a structured reason and produces [[event|PackageNotDelivered]]; a success produces
+[[event|PackageDelivered]].
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|delivery.order.order_delivered.v1]] |
+| Serialization | JSON |
+| Consumer | [[service\|DeliveryService]] |
+| Wired by | `KAFKA_DELIVERY_RESULT_TOPIC` |
+
+## Architecture diagram
+
+<NodeGraph />

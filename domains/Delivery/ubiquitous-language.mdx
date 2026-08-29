@@ -1,0 +1,107 @@
+---
+dictionary:
+  - id: Package
+    name: Package
+    summary: "The physical shipment of an order. An aggregate whose life is a state machine from acceptance to a doorstep."
+    description: |
+      Created when the boundary accepts an order, not when the order is placed. It carries a pickup address, a
+      delivery address, a delivery period, package dimensions and a priority — and it keeps the originating order
+      id so consumers can look back the other way.
+
+      A package is the Delivery boundary's own concept. The order that caused it lives in the Shop boundary and is
+      never loaded here.
+    icon: Package
+
+  - id: PackageStatus
+    name: Package status
+    summary: "Where a package is in its lifecycle: accepted, assigned, in transit, delivered, not delivered, or requiring manual handling."
+    description: |
+      Every transition emits an event, and all six of them share one Kafka topic. Consumers distinguish them by an
+      `event_type` header rather than by subscribing to different topics.
+    icon: Activity
+
+  - id: Courier
+    name: Courier
+    summary: "The person who carries packages. Has a status, a transport type, a work zone, a capacity and a last known location."
+    description: |
+      Capacity is derived from transport type — changing the transport recalculates the maximum load. Ratings and
+      delivery counts accumulate on the aggregate and feed the dispatch sort.
+    icon: User
+
+  - id: CourierStatus
+    name: Courier status
+    summary: "Whether a courier can be given work: free, busy, unavailable, or archived."
+    description: |
+      Archiving is a soft delete — the aggregate stays for history, it just stops being dispatchable.
+    icon: UserCheck
+
+  - id: TransportType
+    name: Transport type
+    summary: "How a courier moves. Determines maximum load and the plausible distance radius."
+    icon: Bike
+
+  - id: PackagePool
+    name: Package pool
+    summary: "The set of packages awaiting or undergoing delivery, queried with filters over status, priority, region and time."
+    description: |
+      A working queue rather than a stored collection: it is a filtered, paginated, sorted view over packages.
+    icon: Boxes
+
+  - id: CourierPool
+    name: Courier pool
+    summary: "The set of couriers, queried with filters over status, transport type and zone — optionally with current location."
+    icon: Users
+
+  - id: Dispatch
+    name: Dispatch
+    summary: "Choosing which courier gets a package."
+    description: |
+      Either manual (an explicit courier id) or automatic. Automatic selection scores candidates by Haversine
+      distance from their last known location, after filtering on status, capacity and work zone.
+    icon: Route
+
+  - id: Assignment
+    name: Assignment
+    summary: "The binding of a package to a courier. Emits both a status event and a separate courier-facing notification."
+    description: |
+      Assignment is the one event published twice on purpose: once into the package status stream as protobuf, and
+      once as JSON on a dedicated topic that the emulator consumes.
+    icon: Link2
+
+  - id: Geolocation
+    name: Geolocation
+    summary: "A courier's position, reported continuously and used for dispatch and tracking."
+    description: |
+      Arrives over Kafka rather than through the API, on a topic of its own — the volume and retention profile of
+      location updates has nothing in common with lifecycle events.
+    icon: MapPin
+
+  - id: Routing
+    name: Routing
+    summary: "Turning coordinates into a road-network path with a distance and a travel time."
+    description: |
+      Provided by a self-hosted OSRM instance, not by the domain. Used both to simulate courier movement and to
+      reason about real distance.
+    icon: Milestone
+
+  - id: DeliveryTracking
+    name: Delivery tracking
+    summary: "The customer-facing view of where a package is, keyed by the originating order id."
+    description: |
+      Available as a snapshot or as a stream that pushes a new snapshot whenever delivery state changes. It is
+      exposed into the Shop storefront through the federated graph — the one synchronous crossing of the boundary.
+    icon: Radar
+
+  - id: NotDelivered
+    name: Not delivered
+    summary: "A failed delivery attempt, carrying a reason and — when the reason is OTHER — a required description."
+    description: |
+      A terminal outcome for the attempt, not for the package: the reason is structured so that downstream systems
+      can distinguish "customer absent" from an address problem without parsing prose.
+    icon: PackageX
+
+  - id: Support
+    name: Support
+    summary: "Customer service for the delivery process — enquiries and problems arising from a shipment."
+    icon: LifeBuoy
+---

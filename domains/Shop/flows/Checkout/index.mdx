@@ -1,0 +1,132 @@
+---
+id: Checkout
+name: "Checkout"
+version: "1.0.0"
+summary: "A customer turns a cart into an order; pricing is resolved, and delivery is requested by a synchronous call rather than an event."
+owners:
+  - shop-platform
+steps:
+  - id: "customer"
+    title: "Customer checks out"
+    actor:
+      name: "Customer"
+    next_step:
+      id: "ui"
+      label: "Checkout on the storefront"
+
+  - id: "ui"
+    title: "Shop UI"
+    summary: "Next.js storefront; session cookie held by lib/ory"
+    service:
+      id: "ShopUI"
+      version: "1.0.0"
+    next_step:
+      id: "bff"
+      label: "GraphQL mutation through the edge"
+
+  - id: "bff"
+    title: "Shop BFF"
+    summary: "Cosmo Router :9991 — reached with a JWT minted at the edge by Oathkeeper"
+    service:
+      id: "ShopBFF"
+      version: "1.0.0"
+    next_step:
+      id: "oms_graphql"
+      label: "carts subgraph :4011"
+
+  - id: "oms_graphql"
+    title: "OMS GraphQL Subgraph"
+    summary: "Translates the federated operation into an OMS gRPC call"
+    service:
+      id: "OMSGraphQL"
+      version: "1.0.0"
+    next_step:
+      id: "checkout_cmd"
+      label: "gRPC"
+
+  - id: "checkout_cmd"
+    title: "CheckoutOrder"
+    message:
+      id: "CheckoutOrder"
+      version: "1.0.0"
+    next_step:
+      id: "oms"
+      label: "Handle command"
+
+  - id: "oms"
+    title: "OMS Service"
+    summary: "Loads the cart, creates the order aggregate, empties the cart — one transaction with the outbox"
+    service:
+      id: "OMSService"
+      version: "1.0.0"
+    next_steps:
+      - id: "pricing"
+        label: "Price the cart"
+      - id: "order_created"
+        label: "Publish event"
+      - id: "request_delivery"
+        label: "If the order ships"
+
+  - id: "pricing"
+    title: "CalculateCartTotal"
+    message:
+      id: "CalculateCartTotal"
+      version: "1.0.0"
+    next_step:
+      id: "pricer"
+      label: "gRPC — optional dependency"
+
+  - id: "pricer"
+    title: "Pricer Service"
+    summary: "Evaluates Rego policies; if unreachable, OMS proceeds without pricing"
+    service:
+      id: "PricerService"
+      version: "1.0.0"
+
+  - id: "order_created"
+    title: "OrderCreated"
+    message:
+      id: "OrderCreated"
+      version: "1.0.0"
+
+  - id: "request_delivery"
+    title: "RequestDelivery activity"
+    summary: "Temporal activity — heartbeats, retries transient failures, classifies InvalidArgument and AlreadyExists as non-retryable"
+    service:
+      id: "OMSService"
+      version: "1.0.0"
+    next_step:
+      id: "accept_order"
+      label: "gRPC, not an event"
+
+  - id: "accept_order"
+    title: "AcceptOrder"
+    message:
+      id: "AcceptOrder"
+      version: "1.0.0"
+    next_step:
+      id: "delivery"
+      label: "Crosses into the Delivery boundary"
+
+  - id: "delivery"
+    title: "Delivery Service"
+    summary: "Creates the package and returns package_id synchronously; the rest continues in the DeliverPackage flow"
+    service:
+      id: "DeliveryService"
+      version: "1.0.0"
+---
+
+<NodeGraph />
+
+## The step that surprises people
+
+`RequestDelivery` is a **synchronous gRPC call**, not a published event.
+[[event|OrderDeliveryRequested]] is published alongside it and consumed by nobody — see
+[[channel|oms.order.delivery_requested_event.v1]].
+
+Durability comes from Temporal: the activity retries transient failures and refuses to retry validation, contract
+and configuration errors.
+
+## Where it continues
+
+Everything after the package is created is [[flow|DeliverPackage]].

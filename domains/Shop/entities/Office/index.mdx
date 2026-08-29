@@ -1,0 +1,54 @@
+---
+id: Office
+name: Office
+version: 1.0.0
+summary: A physical pickup location, with real coordinates and opening hours.
+owners:
+  - shop-platform
+properties:
+  - name: name
+    type: string
+    required: true
+    description: Display name of the office.
+  - name: address
+    type: text
+    required: true
+    description: Full street address.
+  - name: location
+    type: Point
+    required: true
+    description: GeoDjango PointField, SRID 4326 (WGS84). Real geometry, not a latitude/longitude pair.
+  - name: opening_time
+    type: time
+    required: true
+    description: When the office opens.
+  - name: closing_time
+    type: time
+    required: true
+    description: When the office closes.
+  - name: working_days
+    type: string
+    required: true
+    description: Which days the office operates.
+---
+
+## Overview
+
+Reference data owned by [[service|AdminService]] for orders collected in person rather than delivered.
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Why this entity forces PostGIS
+
+`location` is a `PointField` with SRID 4326, so [[container|shop-postgres]] needs the geospatial extension. It is
+the only entity on the platform that does.
+
+The alternative — two float columns — was not taken, which means proximity questions ("which office is nearest")
+are answerable in the database rather than in application code.
+
+## Not connected to delivery
+
+An office is a place a customer comes to. It is unrelated to the pickup address on a [[entity|Package]], which is
+carried on the delivery request and never resolved against this table.

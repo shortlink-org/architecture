@@ -1,0 +1,62 @@
+---
+id: osrm
+name: OSRM
+version: 1.0.0
+summary: Self-hosted Open Source Routing Machine. Turns coordinates into road-network routes, distances and travel times.
+scope: external
+owners:
+  - shop-platform
+actors:
+  - id: openstreetmap
+    name: OpenStreetMap
+    label: supplies the OSM extract the graph is built from
+    direction: inbound
+badges:
+  - content: Third-party
+    backgroundColor: gray
+    textColor: gray
+  - content: Self-hosted
+    backgroundColor: green
+    textColor: green
+---
+
+## Overview
+
+OSRM is the routing engine behind everything in [[domain|Delivery]] that needs a real road network rather than a
+straight line — courier movement simulation and the distance term in courier dispatch.
+
+There is no application code for it in the repository. What is committed is a Helm chart and a locally maintained
+OpenAPI description (`osrm/openapi/openapi.yaml`), deliberately narrowed to the endpoints the shop services
+actually call: `nearest`, `route`, `table`, `trip` and `match`.
+
+## Context Diagram
+
+<ContextDiagram />
+
+## Why it is here
+
+From [[adr|adr-courier-emulation-0003-osrm-routing]]: routes have to follow the real road network, distances and
+travel times have to be believable, thousands of routes get generated, and an external paid API was not acceptable.
+OSRM is self-hosted and fast; the cost is a graph preprocessing step.
+
+| | |
+|---|---|
+| Region | Berlin (test zone) |
+| Profile | `car.lua` |
+| Algorithm | MLD — Multi-Level Dijkstra, tuned for frequent queries |
+| API version | OSRM HTTP API 5.24.0 |
+
+The graph is built ahead of time: `OSM PBF → osrm-extract → osrm-partition → osrm-customize`.
+
+## Access
+
+Not exposed publicly — `ingress.enabled: false`. An Istio `AuthorizationPolicy` admits exactly two service accounts
+and requires a shared header:
+
+| | |
+|---|---|
+| Allowed service accounts | `shortlink-shop-delivery`, `shortlink-shop-courier-emulation` |
+| Required header | `x-osrm-auth` |
+
+So both [[service|DeliveryService]] and [[service|CourierEmulationService]] are first-class clients — routing is not
+only a simulation concern.

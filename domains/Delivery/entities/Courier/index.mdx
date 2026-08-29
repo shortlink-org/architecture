@@ -1,0 +1,119 @@
+---
+id: Courier
+name: Courier
+version: 1.0.0
+identifier: courier_id
+aggregateRoot: true
+summary: The person who carries packages — status, transport, capacity, work zone, rating and last known location.
+owners:
+  - shop-platform
+properties:
+  - name: courier_id
+    type: UUID
+    required: true
+    description: Aggregate identifier.
+  - name: name
+    type: string
+    required: true
+    description: Courier name.
+  - name: phone
+    type: string
+    required: true
+    description: Contact phone. Passed to the customer side on assignment.
+  - name: email
+    type: string
+    required: true
+    description: Contact email.
+  - name: transport_type
+    type: TransportType
+    required: true
+    description: How the courier moves. Determines max_load.
+  - name: max_distance_km
+    type: double
+    required: true
+    description: Radius the courier is willing to cover.
+  - name: status
+    type: CourierStatus
+    required: true
+    description: Whether the courier can be given work.
+    enum: ['FREE', 'BUSY', 'UNAVAILABLE', 'ARCHIVED']
+  - name: current_load
+    type: int32
+    required: true
+    description: Packages currently held.
+  - name: max_load
+    type: int32
+    required: true
+    description: Derived from transport_type, recalculated when transport changes.
+  - name: rating
+    type: double
+    required: true
+    description: Accumulated rating, usable as a dispatch sort key.
+  - name: work_hours
+    type: WorkHours
+    required: true
+    description: When the courier is available.
+  - name: work_zone
+    type: string
+    required: true
+    description: Region or district the courier serves. A dispatch filter.
+  - name: current_location
+    type: Location
+    required: false
+    description: Last reported position. Read from the Redis cache, not from Postgres.
+  - name: successful_deliveries
+    type: int32
+    required: true
+    description: Completed deliveries.
+  - name: failed_deliveries
+    type: int32
+    required: true
+    description: Failed attempts.
+  - name: push_token
+    type: string
+    required: false
+    description: FCM/APNS token, supplied at registration for assignment notifications.
+  - name: created_at
+    type: timestamp
+    required: true
+    description: Registration time.
+  - name: last_active_at
+    type: timestamp
+    required: false
+    description: Last sign of life.
+---
+
+## Overview
+
+Owned by [[service|DeliveryService]], stored in [[container|delivery-postgres]] (`couriers`), defined in
+`delivery/src/domain/model/courier/entity.rs`.
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Capacity is derived, not set
+
+`max_load` is not an independent field a caller can write. It follows from `transport_type` — which is why
+[[command|ChangeCourierTransportType]] recalculates it rather than expecting the caller to keep the two consistent.
+
+## Archiving instead of deleting
+
+`ARCHIVED` is a soft delete ([[command|ArchiveCourier]]). The aggregate stays so that historical packages still
+resolve their courier; it simply stops being dispatchable.
+
+## Location is the one property that does not live in Postgres
+
+Couriers report position continuously over [[channel|delivery.courier.location.v1]]. The **current** position is a
+TTL'd key in [[container|delivery-redis]]; the trail is appended to `courier_location_history` in Postgres.
+
+This split is deliberate. Dispatch needs the latest position of every candidate on every assignment, and that read
+pattern does not belong against an append-only table. It also means `current_location` can legitimately be absent —
+a courier who has stopped reporting has no current position, which is information dispatch wants.
+
+`GetCourierPool` reflects this: `include_location` is an explicit request flag, not a field you always get.
+
+## What dispatch actually uses
+
+[[adr|adr-delivery-0004-dispatching-and-geolocation]]: filter on `status`, `current_load` against `max_load`, and
+`work_zone`; then sort by Haversine distance from `current_location`.

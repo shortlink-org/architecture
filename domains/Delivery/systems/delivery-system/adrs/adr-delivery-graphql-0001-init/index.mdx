@@ -1,0 +1,56 @@
+---
+id: adr-delivery-graphql-0001-init
+name: "ADR-0001 (delivery-graphql): Init delivery-graphql subgraph"
+version: 1.0.0
+summary: "Нужен GraphQL API для управления Delivery service из новой админ-панели (admin-ui)."
+status: accepted
+date: 2026-02-02
+owners:
+  - shop-platform
+decisionMakers:
+  - shop-platform
+appliesTo:
+  - type: service
+    id: DeliveryGraphQL
+---
+
+> Source: [delivery-graphql/docs/ADR/decisions/0001-init.md](https://github.com/shortlink-org/shop/blob/main/delivery-graphql/docs/ADR/decisions/0001-init.md)
+
+## Context
+
+Нужен GraphQL API для управления Delivery service из новой админ-панели (admin-ui).
+Delivery service предоставляет gRPC API для управления курьерами и доставками.
+
+Существующая Django админка (`admin/`) использует прямое gRPC подключение,
+но для admin-ui выбрана архитектура через BFF (GraphQL Federation).
+
+## Decision
+
+Создаём новый сервис `delivery-graphql` как GraphQL subgraph для BFF.
+
+Изначально выбрали **Tailcall** (декларативный gRPC→GraphQL gateway). В 2026-03 мигрировали на **Cosmo Connect gRPC subgraph** (Go), по образцу oms-graphql:
+
+1. **Технология**: Go, Connect RPC (`connectrpc.com/connect`), gRPC-клиент к Delivery
+2. **Порт**: 4013 (Cosmo subgraph, appProtocol: grpc)
+3. **Federation**: Cosmo Router подключается по gRPC, mapping.json для операций
+4. **Proto**: buf registry (`buf.build/shortlink-org/shop-delivery-rpc`), federated service proto в `pkg/proto/service/v1/`
+
+Преимущества Cosmo Connect (как у oms-graphql):
+- Единый стек с oms-graphql
+- Типобезопасность через buf-генерацию
+- Единый источник proto через BSR
+
+## Consequences
+
+### Positive
+- Единая точка входа через BFF для всех клиентов
+- GraphQL типизация и introspection
+- Консистентность с oms-graphql (Go, Connect, buf)
+
+### Negative
+- Дополнительный сервис для деплоя и мониторинга
+
+## Links
+
+- [Cosmo Router](https://cosmo-docs.wundergraph.com/)
+- Delivery proto: `buf.build/shortlink-org/shop-delivery-rpc`

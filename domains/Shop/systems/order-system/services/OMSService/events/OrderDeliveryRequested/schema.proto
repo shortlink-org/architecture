@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package domain.order.events.v1;
+
+option go_package = "github.com/shortlink-org/shop/oms/internal/domain/order/v1/events/v1";
+
+import "google/protobuf/timestamp.proto";
+import "domain/order/v1/common/common.proto";
+
+// OrderDeliveryRequestedEvent - canonical name: oms.order.delivery_requested.v1
+// Event when order is created with delivery info
+// This event is published to delivery service to request package acceptance
+message OrderDeliveryRequestedEvent {
+  // Order ID
+  string order_id = 1;
+  // Customer ID
+  string customer_id = 2;
+  // Pickup address
+  domain.order.common.v1.DeliveryAddress pickup_address = 3;
+  // Delivery address
+  domain.order.common.v1.DeliveryAddress delivery_address = 4;
+  // Delivery period
+  domain.order.common.v1.DeliveryPeriod delivery_period = 5;
+  // Package info
+  domain.order.common.v1.PackageInfo package_info = 6;
+  // Priority
+  domain.order.common.v1.DeliveryPriority priority = 7;
+  // Timestamp when event was created
+  google.protobuf.Timestamp created_at = 8;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 9;
+  // Package ID assigned by delivery service (optional at request time)
+  string package_id = 10;
+  // Aggregate version after the mutation was applied
+  int32 aggregate_version = 11;
+}

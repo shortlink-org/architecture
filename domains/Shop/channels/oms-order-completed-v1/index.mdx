@@ -1,0 +1,28 @@
+---
+id: oms.order.completed.v1
+name: oms.order.completed.v1
+version: 1.0.0
+summary: |
+  Carries OrderCompleted. The only Shop topic with a consumer inside the boundary.
+owners:
+  - shop-platform
+address: oms.order.completed.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|OMSService]] carrying [[event|OrderCompleted]] — and consumed by
+[[service|OMSService]] as well.
+
+The leaderboard consumer subscribes here and folds each completed order into
+[[container|oms-redis-leaderboard]]. The service listening to its own event is deliberate: it keeps the ranking a
+projection that can be rebuilt from the log, rather than a query over the order table.
+See [[adr|adr-shop-0006-goods-leaderboard-read-model]].
+
+Redelivery is handled in the consumer, not by the broker — the Lua script is keyed on order id plus
+`aggregate_version`.
+
+<NodeGraph />

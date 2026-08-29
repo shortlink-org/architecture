@@ -1,0 +1,67 @@
+---
+id: catalog-system
+name: Catalog System
+version: 1.0.0
+summary: |
+  Goods and office reference data, the back office that edits them, and the adapter that exposes them to the
+  federated graph.
+scope: internal
+owners:
+  - shop-platform
+services:
+  - id: AdminService
+  - id: AdminGraphQL
+  - id: AdminUI
+  - id: EmailSubscriptionService
+containers:
+  - id: shop-postgres
+  - id: shop-redis
+entities:
+  - id: Good
+  - id: Office
+relationships:
+  - id: storefront-system
+    label: exposes goods into the federated graph of
+actors:
+  - id: back-office-user
+    name: Back-office user
+    label: creates and edits goods
+    direction: inbound
+badges:
+  - content: Python
+    backgroundColor: blue
+    textColor: blue
+  - content: CRUD
+    backgroundColor: gray
+    textColor: gray
+---
+
+## Overview
+
+The reference-data half of the domain. [[service|AdminService]] is a Django application that owns
+[[entity|Good]] and [[entity|Office]]; [[service|AdminUI]] is the back office over it; [[service|AdminGraphQL]] is a
+typed adapter that lets the rest of the platform read goods through GraphQL instead of Django's REST API.
+
+## Context Diagram
+
+<ContextDiagram />
+
+## Resource Diagram
+
+<NodeGraph />
+
+## Why Django
+
+The job here is create, edit and list a catalogue with an admin UI over it — the one shape Django is unambiguously
+good at. [[adr|adr-admin-0003-rest-framework]] covers the REST layer put in front of it for the public API.
+
+The cost is that the goods catalogue speaks a different protocol from everything else in the domain, which is
+exactly what [[service|AdminGraphQL]] exists to hide.
+
+## Goods do not flow as events
+
+Nothing in this system publishes to Kafka. Goods are read synchronously, through the graph, at the moment they are
+needed.
+
+The one contract that suggests otherwise is [[event|StockChange]] — declared in the order engine's protobuf, never
+implemented on either side.

@@ -1,0 +1,45 @@
+---
+id: RegisterCourier
+name: Register courier
+version: 1.0.0
+summary: |
+  Adds a new courier to the fleet.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Courier
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.RegisterCourier`. Creates a [[entity|Courier]] with contact details, transport type, maximum
+distance, work zone, work hours and a push token for assignment notifications.
+
+## Contract
+
+```proto
+rpc RegisterCourier(RegisterCourierRequest) returns (RegisterCourierResponse);
+```
+
+## Capacity is not an input
+
+`max_load` is derived from `transport_type` rather than supplied — the same rule
+[[command|ChangeCourierTransportType]] re-applies later.
+
+## Effect
+
+Emits [[event|CourierRegistered]]. The push token is deliberately not on the event.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

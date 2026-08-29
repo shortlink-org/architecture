@@ -1,0 +1,44 @@
+---
+id: GetOrderTracking
+name: Get order tracking
+version: 1.0.0
+summary: |
+  Returns the current delivery state for an order, keyed by OMS order id.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Tracking
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.GetOrderTracking`. The customer-facing read, reached through
+[[service|DeliveryGraphQL]] and [[service|ShopBFF]].
+
+## Contract
+
+```proto
+rpc GetOrderTracking(GetOrderTrackingRequest) returns (GetOrderTrackingResponse);
+```
+
+## Keyed by order, not by package
+
+The caller is in the [[domain|Shop]] boundary and has never seen a [[entity|Package]] — it holds an
+[[entity|Order]]. So tracking is looked up by `order_id`, the cross-boundary reference the package carries for
+exactly this purpose.
+
+This is what makes the federated graph work: a customer viewing an order gets tracking in the same response.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

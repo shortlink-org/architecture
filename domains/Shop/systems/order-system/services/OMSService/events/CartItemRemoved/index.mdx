@@ -1,0 +1,32 @@
+---
+id: CartItemRemoved
+name: Cart item removed
+version: 1.0.0
+summary: |
+  Published when a good is taken out of a cart.
+owners:
+  - shop-platform
+badges:
+  - content: 'Topic: oms.oms.item_removed_event.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: JSON
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Emitted by the [[entity|Cart]] aggregate on `RemoveItem`. Payload is the Go struct `ItemRemovedEvent`.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|oms.oms.item_removed_event.v1]] |
+| Serialization | JSON |
+| Consumers | none today |
+
+## Architecture diagram
+
+<NodeGraph />

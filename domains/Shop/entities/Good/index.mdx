@@ -1,0 +1,70 @@
+---
+id: Good
+name: Good
+version: 1.0.0
+identifier: id
+aggregateRoot: true
+summary: A product available for purchase. The catalogue's aggregate root and the thing every cart and order item points at.
+owners:
+  - shop-platform
+properties:
+  - name: id
+    type: UUID
+    required: true
+    description: Generated client-side by Django (uuid4), not a database sequence.
+  - name: name
+    type: string
+    required: true
+    description: Display name, max 255 characters.
+  - name: price
+    type: Money
+    required: true
+    description: Amount plus currency, stored as a djmoney MoneyField (10 digits, 2 decimal places, default USD).
+  - name: description
+    type: text
+    required: true
+    description: Long-form product description.
+  - name: tags
+    type: string[]
+    required: false
+    description: Postgres array used for categorisation and filtering. Defaults to empty.
+  - name: created_at
+    type: timestamp
+    required: true
+    description: Set on insert.
+  - name: updated_at
+    type: timestamp
+    required: true
+    description: Touched on every write.
+---
+
+## Overview
+
+The primary term for merchandise across the whole boundary, owned by [[service|AdminService]] and stored in
+[[container|shop-postgres]].
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Two names that are not this one
+
+| Name | Where | What it actually is |
+|------|-------|---------------------|
+| `Product` | [[service\|ShopUI]] TypeScript types | the same thing, named for the Shopify-shaped GraphQL the storefront was forked from |
+| `Item` | retired Merch service | an SKU-level inventory unit — a different level of abstraction, not a synonym |
+
+## Price is not a number
+
+`price` is a `MoneyField`: an amount **and** a currency, with two decimal places. Pricing calculations preserve that
+precision by passing decimals as strings across the wire — see [[query|CalculateCartTotal]], where every monetary
+field in the contract is a `string`.
+
+## History without events
+
+The model uses `simple_history`, so every change appends to a historical table. The catalogue therefore has a full
+audit trail while publishing no events at all — a cart or order references a good by id and re-reads it when needed.
+
+> [!NOTE]
+> [[event|StockChange]] would have been the exception. It is declared in the order engine's protobuf and
+> implemented nowhere.

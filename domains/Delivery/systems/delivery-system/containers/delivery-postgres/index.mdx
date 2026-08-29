@@ -1,0 +1,47 @@
+---
+id: delivery-postgres
+name: Delivery Postgres
+version: 1.0.0
+container_type: database
+technology: postgres
+authoritative: true
+access_mode: readWrite
+classification: confidential
+owners:
+  - shop-platform
+summary: Source of truth for packages and couriers, their location history, and the delivery outbox.
+---
+
+<NodeGraph />
+
+## What is this?
+
+The only authoritative store of [[entity|Package]] and [[entity|Courier]]. Accessed through `sea-orm`; the schema is
+owned by Rust migrations in `delivery/migration/src`.
+
+| Table | Created by |
+|-------|-----------|
+| `couriers` | `m20260131_000001_create_couriers` |
+| `packages` | `m20260131_000002_create_packages` |
+| `courier_location_history` | `m20260131_000004_create_courier_location_history` |
+| outbox | `m20260311_000006_create_outbox_messages` |
+
+Later migrations add recipient contacts and a customer phone to packages, persist courier runtime state, and drop a
+legacy free-text `not_delivered_reason` in favour of the structured reason described in [[event|PackageNotDelivered]].
+
+## Same outbox pattern as the order side
+
+Delivery reaches Kafka the same way [[service|OMSService]] does: the aggregate change and the event row commit
+together, and a forwarder publishes afterwards. The two boundaries arrived at this independently, in different
+languages — the Rust migration and [[adr|adr-oms-0005-reliable-domain-events-outbox]] describe the same shape.
+
+## Location history is not the current location
+
+`courier_location_history` is an append-only trail. The position dispatch actually reads is the cached one in
+[[container|delivery-redis]] — writing every location update straight into a hot query path would make dispatch a
+function of the write volume of the courier fleet.
+
+## Classification
+
+`confidential`: packages carry pickup and delivery addresses, customer phone numbers and recipient contacts;
+couriers carry personal contact details and continuous location.

@@ -1,0 +1,47 @@
+---
+id: OrderDeliveryCompleted
+name: Order delivery completed
+version: 1.0.0
+summary: |
+  Delivery succeeded, restated as a fact about the order.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: oms.order.delivery_completed_event.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf shape, JSON on the wire
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Derived from [[event|PackageDelivered]]. Carries the courier id, the delivery time and the delivery location.
+
+> [!WARNING]
+> The protobuf comment on this message says it is "received from delivery service". It is not. This event is
+> **published by** [[service|OMSService]] from `usecases/order/event/on_delivery_status/handler.go`, after it
+> consumes a package status change off [[channel|delivery.package.status.v1]] and applies it to the
+> [[entity|Order]].
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|oms.order.delivery_completed_event.v1]] |
+| Serialization | JSON, from the protobuf-defined shape |
+| Consumers | none |
+
+> [!NOTE]
+> This is not [[event|OrderCompleted]]. Delivery completing and the order reaching its terminal state are separate
+> transitions on separate state machines — only the latter feeds the leaderboard.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

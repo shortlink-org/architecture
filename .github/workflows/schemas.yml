@@ -12,7 +12,7 @@ on:
     paths:
       - 'scripts/sync-schemas.mjs'
       - '**/*.proto'
-      - 'domains/Link/systems/link-management-system/services/LinkBFF/api.yaml'
+      - '**/api.yaml'
 
 jobs:
   check:

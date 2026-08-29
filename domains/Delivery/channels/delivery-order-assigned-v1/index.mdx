@@ -1,0 +1,35 @@
+---
+id: delivery.order.assigned.v1
+name: delivery.order.assigned.v1
+version: 1.0.0
+summary: |
+  A JSON copy of PackageAssigned, published solely for the courier emulator.
+owners:
+  - shop-platform
+address: delivery.order.assigned.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|DeliveryService]], consumed by [[service|CourierEmulationService]].
+
+Carries the same fact as [[event|PackageAssigned]] on [[channel|delivery.package.status.v1]], but as **JSON**
+rather than protobuf. The assignment is published to both topics in one call.
+
+## Why it exists
+
+Compatibility with the emulator, which reads JSON. It is not a second source of truth — if the two ever disagree,
+the protobuf event on the status topic is authoritative.
+
+## Configuration
+
+| | |
+|---|---|
+| Partitions | 3 |
+| Retention | 7 days |
+| Payload | JSON |
+
+<NodeGraph />

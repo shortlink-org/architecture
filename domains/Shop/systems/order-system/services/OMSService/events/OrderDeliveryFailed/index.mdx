@@ -1,0 +1,53 @@
+---
+id: OrderDeliveryFailed
+name: Order delivery failed
+version: 1.0.0
+summary: |
+  A delivery attempt failed, restated as a fact about the order, with a structured reason.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: oms.order.delivery_failed_event.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf shape, JSON on the wire
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Derived from [[event|PackageNotDelivered]]. Carries the courier id, the failure time and `NotDeliveredDetails`.
+
+> [!WARNING]
+> The protobuf comment on this message says it is "received from delivery service". It is not. This event is
+> **published by** [[service|OMSService]] from `usecases/order/event/on_delivery_status/handler.go`, after it
+> consumes a package status change off [[channel|delivery.package.status.v1]] and applies it to the
+> [[entity|Order]].
+
+## The reason survives the translation
+
+`NotDeliveredDetails` is an enum plus an optional description, and the description is required only when the
+reason is `OTHER`:
+
+`CUSTOMER_NOT_AVAILABLE`, `WRONG_ADDRESS`, `CUSTOMER_REFUSED`, `ACCESS_DENIED`, `PACKAGE_DAMAGED`, `OTHER`.
+
+A consumer can therefore route on the reason without parsing prose — an address problem and an absent customer need
+different follow-up.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|oms.order.delivery_failed_event.v1]] |
+| Serialization | JSON, from the protobuf-defined shape |
+| Consumers | none |
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,44 @@
+---
+id: UpdateCourierLocation
+name: Update courier location
+version: 1.0.0
+summary: |
+  Records a courier's current position. Driven by Kafka, not exposed as an RPC.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Kafka-driven
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Defined as `UpdateCourierLocationCommand` in `delivery/src/domain/model/delivery/commands/v1/commands.proto`.
+
+> [!WARNING]
+> **There is no `UpdateCourierLocation` RPC on `DeliveryService`.** Position updates arrive over Kafka on
+> [[channel|delivery.courier.location_received.v1]] and are handled by the location consumer. The command exists in
+> the domain model; it has no synchronous entry point.
+
+## Why Kafka
+
+Couriers report continuously. Putting that on the gRPC API would couple the fleet's reporting rate to the API's
+availability and capacity, for data whose value expires in seconds.
+
+## Effect
+
+Writes the TTL'd position to [[container|delivery-redis]], appends to `courier_location_history` in
+[[container|delivery-postgres]], and emits [[event|CourierLocationUpdated]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

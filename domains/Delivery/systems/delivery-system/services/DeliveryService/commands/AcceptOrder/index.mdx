@@ -1,0 +1,58 @@
+---
+id: AcceptOrder
+name: Accept order
+version: 1.0.0
+summary: |
+  Accepts an order from the Shop boundary and creates a package. The entry point into Delivery.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Package
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.AcceptOrder`. This is **the** way work enters [[domain|Delivery]].
+
+## Called synchronously, from a workflow
+
+[[service|OMSService]] calls it from the `RequestDelivery` Temporal activity and waits for the `package_id`.
+Nothing consumes [[channel|oms.order.delivery_requested_event.v1]] — the event is a notification, this call is the
+mechanism.
+
+Durability comes from Temporal rather than a broker. The activity heartbeats while waiting, and classifies the
+gRPC response:
+
+| Code | Treated as |
+|------|-----------|
+| `InvalidArgument`, `FailedPrecondition` | non-retryable — validation |
+| `AlreadyExists` | non-retryable — contract |
+| `Unauthenticated`, `PermissionDenied`, `Unimplemented` | non-retryable — configuration |
+| anything else | retryable — Temporal retries |
+
+## Contract
+
+```proto
+rpc AcceptOrder(AcceptOrderRequest) returns (AcceptOrderResponse);
+```
+
+The request carries order id, customer id, both addresses, the delivery period, package info and priority. The
+response carries the new `package_id`, which OMS parses as a UUID and stores on the [[entity|Order]].
+
+## Effect
+
+Creates a [[entity|Package]] in `ACCEPTED` and emits [[event|PackageAccepted]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -23,6 +23,90 @@ const LINK = 'domains/Link/systems/link-management-system/services/LinkService';
 const PROXY = 'domains/Link/systems/redirect-system/services/ProxyService';
 const META = 'domains/Link/systems/metadata-system/services/MetadataService';
 
+const ADMIN = 'domains/Shop/systems/catalog-system/services/AdminService';
+const OMS = 'domains/Shop/systems/order-system/services/OMSService';
+const PRICER = 'domains/Shop/systems/order-system/services/PricerService';
+const DELIVERY = 'domains/Delivery/systems/delivery-system/services/DeliveryService';
+
+/**
+ * Catalog event id -> protobuf message name, where the two differ.
+ * The delivery-related order events carry an `Event` suffix in the proto; the catalog does not repeat it.
+ */
+const OMS_ORDER_EVENTS = {
+  OrderCreated: 'OrderCreated',
+  OrderCancelled: 'OrderCancelled',
+  OrderCompleted: 'OrderCompleted',
+  OrderDeliveryRequested: 'OrderDeliveryRequestedEvent',
+  OrderDeliveryStatusUpdated: 'OrderDeliveryStatusUpdatedEvent',
+  OrderDeliveryCompleted: 'OrderDeliveryCompletedEvent',
+  OrderDeliveryFailed: 'OrderDeliveryFailedEvent',
+};
+
+/**
+ * Source proto -> the commands and queries it defines, as [serviceDir, collection, catalogId].
+ * A command or query gets the whole file: the request message alone does not describe the contract.
+ */
+const RPC_CONTRACTS = {
+  'oms/internal/infrastructure/rpc/cart/v1/model/v1/model.proto': [
+    [OMS, 'commands', 'AddCartItem'],
+    [OMS, 'commands', 'RemoveCartItem'],
+    [OMS, 'commands', 'ResetCart'],
+    [OMS, 'queries', 'GetCart'],
+  ],
+  'oms/internal/infrastructure/rpc/order/v1/model/v1/model.proto': [
+    [OMS, 'commands', 'CreateOrder'],
+    [OMS, 'commands', 'CancelOrder'],
+    [OMS, 'commands', 'CheckoutOrder'],
+    [OMS, 'commands', 'UpdateOrderDeliveryInfo'],
+    [OMS, 'queries', 'GetOrder'],
+    [OMS, 'queries', 'ListOrders'],
+    [OMS, 'queries', 'GetGoodsLeaderboard'],
+  ],
+  'pricer/internal/infrastructure/rpc/cart/v1/policy.proto': [
+    [PRICER, 'queries', 'CalculateCartTotal'],
+  ],
+  // Commands that have a dedicated *Command message in the domain model.
+  'delivery/src/domain/model/delivery/commands/v1/commands.proto': [
+    [DELIVERY, 'commands', 'AcceptOrder'],
+    [DELIVERY, 'commands', 'AssignOrder'],
+    [DELIVERY, 'commands', 'DeliverOrder'],
+    [DELIVERY, 'commands', 'RegisterCourier'],
+    [DELIVERY, 'commands', 'UpdateCourierLocation'],
+  ],
+  // Queries that have a dedicated *Query message in the domain model.
+  'delivery/src/domain/model/delivery/queries/v1/queries.proto': [
+    [DELIVERY, 'queries', 'GetPackagePool'],
+    [DELIVERY, 'queries', 'GetCourierPool'],
+  ],
+  // The rest exist only as RPCs on the gRPC service.
+  'delivery/src/infrastructure/rpc/delivery.proto': [
+    [DELIVERY, 'commands', 'PickUpOrder'],
+    [DELIVERY, 'commands', 'ActivateCourier'],
+    [DELIVERY, 'commands', 'DeactivateCourier'],
+    [DELIVERY, 'commands', 'ArchiveCourier'],
+    [DELIVERY, 'commands', 'UpdateCourierContactInfo'],
+    [DELIVERY, 'commands', 'UpdateCourierWorkSchedule'],
+    [DELIVERY, 'commands', 'ChangeCourierTransportType'],
+    [DELIVERY, 'queries', 'GetCourier'],
+    [DELIVERY, 'queries', 'GetCourierDeliveries'],
+    [DELIVERY, 'queries', 'GetOrderTracking'],
+    [DELIVERY, 'queries', 'SubscribeOrderTracking'],
+    [DELIVERY, 'queries', 'GetRandomAddress'],
+  ],
+};
+
+const DELIVERY_EVENTS = {
+  PackageAccepted: 'PackageAcceptedEvent',
+  PackageAssigned: 'PackageAssignedEvent',
+  PackageInTransit: 'PackageInTransitEvent',
+  PackageDelivered: 'PackageDeliveredEvent',
+  PackageNotDelivered: 'PackageNotDeliveredEvent',
+  PackageRequiresHandling: 'PackageRequiresHandlingEvent',
+  CourierRegistered: 'CourierRegisteredEvent',
+  CourierStatusChanged: 'CourierStatusChangedEvent',
+  CourierLocationUpdated: 'CourierLocationUpdatedEvent',
+};
+
 /**
  * repo   — owner/name on github.com
  * ref    — branch or tag to read from
@@ -82,6 +166,88 @@ const FILES = [
     // fetched alongside api.yaml so the relative $refs resolve during bundling
     siblings: ['base.yaml', 'link.yaml', 'sitemap.yaml', 'config.yaml'],
   },
+
+  // ============================================================================================
+  // shop repository — Shop and Delivery domains
+  // ============================================================================================
+
+  // --- OMS: one event message per catalog event ----------------------------------------------
+  ...Object.entries(OMS_ORDER_EVENTS).map(([id, message]) => ({
+    repo: 'shortlink-org/shop',
+    path: 'oms/internal/domain/order/v1/events/v1/events.proto',
+    target: `${OMS}/events/${id}/schema.proto`,
+    derive: { message },
+  })),
+
+  // Declared but never published or consumed — documented with a "Not implemented" badge.
+  {
+    repo: 'shortlink-org/shop',
+    path: 'oms/internal/domain/stock/v1/stock_event.proto',
+    target: `${OMS}/events/StockChange/schema.proto`,
+    derive: { message: 'StockChangeEvent' },
+  },
+
+  // --- OMS: gRPC contracts, verbatim ----------------------------------------------------------
+  {
+    repo: 'shortlink-org/shop',
+    path: 'oms/internal/infrastructure/rpc/cart/v1/cart_rpc.proto',
+    target: `${OMS}/cart_rpc.proto`,
+  },
+  {
+    repo: 'shortlink-org/shop',
+    path: 'oms/internal/infrastructure/rpc/order/v1/order_rpc.proto',
+    target: `${OMS}/order_rpc.proto`,
+  },
+
+  // --- pricer ---------------------------------------------------------------------------------
+  {
+    repo: 'shortlink-org/shop',
+    path: 'pricer/internal/infrastructure/rpc/cart/v1/policy.proto',
+    target: `${PRICER}/policy.proto`,
+  },
+
+  // --- admin: OpenAPI is a single self-contained file, so no bundling ---------------------------
+  {
+    repo: 'shortlink-org/shop',
+    path: 'admin/docs/public/Shop Admin API.yaml',
+    target: `${ADMIN}/api.yaml`,
+  },
+
+  // --- delivery: one event message per catalog event -------------------------------------------
+  ...Object.entries(DELIVERY_EVENTS).map(([id, message]) => ({
+    repo: 'shortlink-org/shop',
+    path: 'delivery/src/domain/model/delivery/events/v1/events.proto',
+    target: `${DELIVERY}/events/${id}/schema.proto`,
+    derive: { message },
+  })),
+
+  // --- delivery: gRPC and domain contracts, verbatim --------------------------------------------
+  {
+    repo: 'shortlink-org/shop',
+    path: 'delivery/src/infrastructure/rpc/delivery.proto',
+    target: `${DELIVERY}/delivery.proto`,
+  },
+  {
+    repo: 'shortlink-org/shop',
+    path: 'delivery/src/domain/model/delivery/commands/v1/commands.proto',
+    target: `${DELIVERY}/commands.proto`,
+  },
+  {
+    repo: 'shortlink-org/shop',
+    path: 'delivery/src/domain/model/delivery/queries/v1/queries.proto',
+    target: `${DELIVERY}/queries.proto`,
+  },
+
+  // --- commands and queries: the proto that actually defines each one, copied verbatim ----------
+  // Same approach as the Link queries above: the whole contract file rather than one extracted
+  // message, because a request message is meaningless without the service and types around it.
+  ...Object.entries(RPC_CONTRACTS).flatMap(([path, resources]) =>
+    resources.map(([service, kind, id]) => ({
+      repo: 'shortlink-org/shop',
+      path,
+      target: `${service}/${kind}/${id}/schema.proto`,
+    })),
+  ),
 ];
 
 const DEFAULT_REF = 'main';

@@ -1,0 +1,45 @@
+---
+id: CreateOrder
+name: Create order
+version: 1.0.0
+summary: |
+  Creates an order directly, without going through a cart.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Order
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`OrderService.Create` on [[service|OMSService]]. Drives the CREATE transition, moving the [[entity|Order]] from
+`PENDING` to `PROCESSING`.
+
+## Contract
+
+```proto
+rpc Create(CreateRequest) returns (google.protobuf.Empty);
+```
+
+## Not the same as checkout
+
+This creates an order from an explicit item list. [[command|CheckoutOrder]] creates one from an existing
+[[entity|Cart]] and returns the result. Both exist; they are alternative entry points, not layers.
+
+## Effect
+
+Emits [[event|OrderCreated]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

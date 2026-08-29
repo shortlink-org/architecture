@@ -1,0 +1,41 @@
+---
+id: CourierRegistered
+name: Courier registered
+version: 1.0.0
+summary: |
+  A new courier joined the fleet.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: delivery.courier.events.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Emitted by [[command|RegisterCourier]]. Carries name, email, phone, transport type and initial status.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|delivery.courier.events.v1]] |
+| Key | `courier_id` |
+| Consumers | none today |
+
+> [!NOTE]
+> The registration command also accepts a `push_token` for assignment notifications. It is deliberately **not** on
+> this event — a device token is a credential, and the courier lifecycle stream has no consumer that would need it.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

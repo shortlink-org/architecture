@@ -1,0 +1,48 @@
+---
+id: PackageRequiresHandling
+name: Package requires handling
+version: 1.0.0
+summary: |
+  A package cannot proceed automatically and needs a human. The one package event OMS ignores.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: delivery.package.status.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+The escape hatch of the package state machine: something is wrong and no automatic transition applies. Carries a
+free-text `reason`.
+
+## Nobody acts on it
+
+[[service|OMSService]] consumes the status topic but explicitly rejects this message as a non-status event — its
+handler recognises only `ACCEPTED`, `ASSIGNED`, `IN_TRANSIT`, `DELIVERED` and `NOT_DELIVERED`, returning
+`errUnsupportedEventType` for anything else.
+
+So a package can end up in `REQUIRES_HANDLING` and the order will show its last known delivery status indefinitely.
+There is no operator surface for it either — [[service|SupportService]], which would be the natural home, is a
+skeleton.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|delivery.package.status.v1]] |
+| Key | `package_id` |
+| Consumers | none — deliberately filtered out by the only subscriber |
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

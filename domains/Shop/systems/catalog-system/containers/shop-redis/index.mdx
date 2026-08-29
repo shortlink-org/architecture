@@ -1,0 +1,26 @@
+---
+id: shop-redis
+name: Shop Redis
+version: 1.0.0
+container_type: cache
+technology: redis
+authoritative: false
+access_mode: readWrite
+classification: internal
+owners:
+  - shop-platform
+summary: Django cache for the back office.
+---
+
+<NodeGraph />
+
+## What is this?
+
+Ordinary Django caching for [[service|AdminService]], at `redis://redis-master.shortlink-shop:6379/0`.
+
+Nothing authoritative lives here and nothing else reads it. It is listed because the deployment depends on it: the
+service will not start without it in the default configuration.
+
+> [!NOTE]
+> The migration path deliberately bypasses it. `settings_migration.py` runs with a minimal app set and no Redis, so
+> that a schema migration does not require the cache to be up.

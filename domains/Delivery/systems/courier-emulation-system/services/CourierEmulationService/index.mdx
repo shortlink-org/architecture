@@ -1,0 +1,67 @@
+---
+id: CourierEmulationService
+name: Courier Emulation
+version: 1.0.0
+summary: |
+  Simulated courier: consumes assignments, walks an OSRM route, reports location, and confirms pickup and delivery.
+owners:
+  - shop-platform
+sends:
+  - id: CourierLocationReceived
+    to:
+      - id: delivery.courier.location_received.v1
+  - id: OrderPickedUp
+    to:
+      - id: delivery.order.order_picked_up.v1
+  - id: OrderDelivered
+    to:
+      - id: delivery.order.order_delivered.v1
+receives:
+  - id: PackageAssigned
+    from:
+      - id: delivery.order.assigned.v1
+badges:
+  - content: Go
+    backgroundColor: blue
+    textColor: blue
+  - content: Non-production
+    backgroundColor: orange
+    textColor: orange
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/shop/tree/main/courier-emulation'
+---
+
+## Overview
+
+A stand-in for a courier's phone. Without it there is no way to exercise the delivery path end to end: packages
+would be assigned and never move.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## What it does
+
+1. Consumes an assignment off [[channel|delivery.order.assigned.v1]] — the JSON copy of
+   [[event|PackageAssigned]] published specifically for this consumer
+2. Asks [[system|osrm]] for a route between pickup and delivery addresses
+3. Walks the polyline at a configurable speed, publishing [[event|CourierLocationReceived]] as it goes
+4. Confirms pickup with [[event|OrderPickedUp]], then delivery with [[event|OrderDelivered]]
+
+[[service|DeliveryService]] consumes all three, so the package advances through its state machine exactly as it
+would with a real courier.
+
+## Topic naming does not follow the outbound convention
+
+The three topics it publishes are named for what the receiver does with them — `location_received`,
+`order_picked_up`, `order_delivered` — rather than for a package or courier lifecycle event. They are inbound
+topics from the Delivery service's point of view, declared as such in its Strimzi configuration.
+
+## It is a test fixture
+
+This service exists to make non-production environments behave. It is in its own system so that a reader tracing
+the production delivery path does not have to work out which of the two Go services is real.
+
+The [[event|PackageAssigned]] it reacts to is a copy; the authoritative record of an assignment is the protobuf
+event on [[channel|delivery.package.status.v1]].

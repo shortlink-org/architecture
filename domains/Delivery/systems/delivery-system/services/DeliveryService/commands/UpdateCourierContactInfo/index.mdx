@@ -1,0 +1,37 @@
+---
+id: UpdateCourierContactInfo
+name: Update courier contact info
+version: 1.0.0
+summary: |
+  Changes a courier's phone and email.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Courier
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.UpdateContactInfo`.
+
+The phone matters beyond contact detail: it is copied onto [[event|PackageAssigned]] so the customer side can reach
+the courier for an in-flight delivery.
+
+## Effect
+
+No dedicated event — profile changes do not appear on [[channel|delivery.courier.events.v1]], which carries only
+registration and status transitions.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,36 @@
+---
+id: UpdateCourierWorkSchedule
+name: Update courier work schedule
+version: 1.0.0
+summary: |
+  Changes a courier's work hours and zone.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Courier
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.UpdateWorkSchedule`.
+
+Both fields are dispatch filters: `work_zone` restricts which packages a courier is eligible for, and `work_hours`
+determines when.
+
+## Effect
+
+No dedicated event.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

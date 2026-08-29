@@ -1,0 +1,20 @@
+---
+id: oms.order.cancelled.v1
+name: oms.order.cancelled.v1
+version: 1.0.0
+summary: |
+  Carries OrderCancelled, with the cancellation reason when one was given.
+owners:
+  - shop-platform
+address: oms.order.cancelled.v1
+protocols:
+  - kafka
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|OMSService]] carrying [[event|OrderCancelled]]. Reachable from both `PENDING` and
+`PROCESSING`, so a cancellation may or may not have been preceded by a delivery request.
+
+<NodeGraph />

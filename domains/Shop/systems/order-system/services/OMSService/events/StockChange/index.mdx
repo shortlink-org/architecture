@@ -1,0 +1,47 @@
+---
+id: StockChange
+name: Stock change
+version: 1.0.0
+summary: |
+  Declared contract for a stock quantity change. Nothing publishes or consumes it.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: none'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+> [!WARNING]
+> **Not implemented.** `StockChangeEvent` is declared in `oms/internal/domain/stock/v1/stock_event.proto` and has
+> zero references in the Go source — no publisher, no consumer, no topic. It is documented here as a planned
+> contract, not as something a consumer can subscribe to.
+
+The message carries `good_id`, `old_quantity`, `new_quantity` and a timestamp.
+
+## Why it never got built
+
+Stock lives on the wrong side of the boundary. [[entity|Good]] is owned by [[service|AdminService]], a Django
+application that publishes nothing at all and keeps its history in `historical_*` tables. The order engine, where
+this protobuf sits, does not own stock levels.
+
+Making it real means deciding which service owns stock first — and if it were the catalogue, this contract would
+belong there rather than in OMS.
+
+> [!NOTE]
+> [[service|EmailSubscriptionService]] is blocked on the same missing piece from the other direction: it wants a
+> goods event to react to, and none is published.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,49 @@
+---
+id: GetGoodsLeaderboard
+name: Get goods leaderboard
+version: 1.0.0
+summary: |
+  Returns goods ranked by completed orders, over a day, week or month window.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Read model
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`OrderService.GetLeaderboard` on [[service|OMSService]].
+
+## Contract
+
+```proto
+rpc GetLeaderboard(GetLeaderboardRequest) returns (GetLeaderboardResponse);
+```
+
+## Not a query over orders
+
+This does not aggregate the `orders` table. It reads Redis sorted sets in
+[[container|oms-redis-leaderboard]], built by consuming [[event|OrderCompleted]] off Kafka.
+
+That makes the answer eventually consistent: an order completed a second ago may not be ranked yet. It also makes
+it cheap, and rebuildable from the event log.
+
+See [[adr|adr-shop-0006-goods-leaderboard-read-model]].
+
+## Windows
+
+Day, week and month sets are maintained separately, with retentions of 45, 400 and 800 days.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,38 @@
+---
+id: OrderCancelled
+name: Order cancelled
+version: 1.0.0
+summary: |
+  Published when an order is cancelled, with the reason when one was given.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: oms.order.cancelled.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf shape, JSON on the wire
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Reachable from both `PENDING` and `PROCESSING`, so a cancellation may or may not have been preceded by a delivery
+request. Consumers that care about that distinction have to look at whether the order carries a `package_id`.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|oms.order.cancelled.v1]] |
+| Serialization | JSON, from the protobuf-defined shape |
+| Consumers | none |
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

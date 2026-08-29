@@ -1,0 +1,44 @@
+---
+id: CourierStatusChanged
+name: Courier status changed
+version: 1.0.0
+summary: |
+  A courier became available, busy, unavailable or archived.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: delivery.courier.events.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Carries both `old_status` and `new_status` plus an optional reason, so a consumer can see the transition rather
+than just the result.
+
+Emitted by [[command|ActivateCourier]], [[command|DeactivateCourier]] and [[command|ArchiveCourier]], and by
+dispatch itself when assignment or completion changes a courier's load.
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|delivery.courier.events.v1]] |
+| Key | `courier_id` |
+| Consumers | none today |
+
+Archiving is a soft delete: `ARCHIVED` stops the courier being dispatchable but the aggregate stays so historical
+packages still resolve their courier.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,34 @@
+---
+id: DeactivateCourier
+name: Deactivate courier
+version: 1.0.0
+summary: |
+  Marks a courier as unavailable.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Courier
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`DeliveryService.DeactivateCourier`. Sets [[entity|Courier]] status to `UNAVAILABLE`, removing them from dispatch
+without archiving them.
+
+## Effect
+
+Emits [[event|CourierStatusChanged]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

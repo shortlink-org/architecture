@@ -1,0 +1,57 @@
+---
+id: GetPackagePool
+name: Get package pool
+version: 1.0.0
+summary: |
+  Returns packages filtered by status, priority, region and time. Not exposed over gRPC.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Package
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Defined as `GetPackagePoolQuery` in `delivery/src/domain/model/delivery/queries/v1/queries.proto`, with a use-case
+README of its own (UC-6).
+
+> [!WARNING]
+> **There is no `GetPackagePool` RPC on `DeliveryService`.** The query is reachable in-process only. Its courier
+> counterpart, [[query|GetCourierPool]], *is* exposed — the asymmetry looks unintended.
+
+## Contract
+
+```proto
+message GetPackagePoolQuery {
+  repeated PackageStatus status_filter = 1;
+  repeated Priority priority_filter = 2;
+  string region_filter = 3;
+  google.protobuf.Timestamp created_from = 4;
+  google.protobuf.Timestamp created_to = 5;
+  string courier_id = 6;
+  Pagination pagination = 7;
+  SortBy sort_by = 8;
+}
+```
+
+## What it would answer
+
+The operational questions nobody can currently ask over the API: which packages are stuck in
+`REQUIRES_HANDLING`, what is queued in a region, what a given courier is carrying.
+
+That gap and the unconsumed [[event|PackageRequiresHandling]] are the same gap seen from two directions — there is
+no operator surface over the package pool.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

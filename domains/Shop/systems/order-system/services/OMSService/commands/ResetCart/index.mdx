@@ -1,0 +1,40 @@
+---
+id: ResetCart
+name: Reset cart
+version: 1.0.0
+summary: |
+  Empties a customer's cart.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Cart
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`CartService.Reset` on [[service|OMSService]] — the RESET signal on the [[entity|Cart]] workflow.
+
+## Contract
+
+```proto
+rpc Reset(ResetRequest) returns (google.protobuf.Empty);
+```
+
+## Effect
+
+Emits [[event|CartReset]]. The same event is emitted when checkout consumes a cart, so consumers cannot tell the
+two apart from this event alone.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

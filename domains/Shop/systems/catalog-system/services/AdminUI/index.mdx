@@ -1,0 +1,41 @@
+---
+id: AdminUI
+name: Admin UI
+version: 1.0.0
+summary: |
+  Next.js back office for the goods catalogue, reading through the federated graph.
+owners:
+  - shop-platform
+badges:
+  - content: TypeScript
+    backgroundColor: blue
+    textColor: blue
+  - content: Next.js
+    backgroundColor: gray
+    textColor: gray
+repository:
+  language: TypeScript
+  url: 'https://github.com/shortlink-org/shop/tree/main/admin-ui'
+---
+
+## Overview
+
+The interface a back-office user works in. It talks to [[service|ShopBFF]], not to [[service|AdminService]]
+directly — so the back office and the storefront read the catalogue through the same graph.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Stack
+
+Next.js with generated GraphQL types (`codegen.ts`, `graphql/`), Tailwind, and Vitest for tests.
+
+> [!NOTE]
+> This service has no README in the repository — only a `ROADMAP.md`. What is documented here is read from
+> `package.json`, `codegen.ts` and the directory layout rather than from prose.
+
+## Not the Django admin
+
+Django's own admin interface still exists inside [[service|AdminService]]. This is a separate front end over the
+federated graph; the two are not the same surface and can disagree about what is editable.

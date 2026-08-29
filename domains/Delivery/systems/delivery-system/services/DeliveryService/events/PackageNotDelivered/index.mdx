@@ -1,0 +1,46 @@
+---
+id: PackageNotDelivered
+name: Package not delivered
+version: 1.0.0
+summary: |
+  A delivery attempt failed, with a structured reason.
+owners:
+  - shop-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: delivery.package.status.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Terminal failure for an attempt. Carries the courier's location and `NotDeliveredDetails` — an enum plus a
+description that is required only when the reason is `OTHER`:
+
+`CUSTOMER_NOT_AVAILABLE`, `WRONG_ADDRESS`, `CUSTOMER_REFUSED`, `ACCESS_DENIED`, `PACKAGE_DAMAGED`, `OTHER`.
+
+## Structured on purpose
+
+An earlier schema stored a free-text `not_delivered_reason` column; migration
+`m20260316_000009_drop_legacy_not_delivered_reason` removed it. Downstream systems can now route on the reason
+without parsing prose, and the distinction survives the translation into [[event|OrderDeliveryFailed]].
+
+## Delivery
+
+| | |
+|---|---|
+| Topic | [[channel\|delivery.package.status.v1]] |
+| Key | `package_id` |
+| Consumer | [[service\|OMSService]] |
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

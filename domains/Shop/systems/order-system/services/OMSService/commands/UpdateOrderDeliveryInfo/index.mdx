@@ -1,0 +1,46 @@
+---
+id: UpdateOrderDeliveryInfo
+name: Update order delivery info
+version: 1.0.0
+summary: |
+  Changes the delivery details attached to an order.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Order
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`OrderService.UpdateDeliveryInfo` on [[service|OMSService]]. Sets or replaces the pickup and delivery addresses,
+delivery period, package info and priority on an [[entity|Order]].
+
+## Contract
+
+```proto
+rpc UpdateDeliveryInfo(UpdateDeliveryInfoRequest) returns (google.protobuf.Empty);
+```
+
+## Ordering matters
+
+`RequestDelivery` refuses to run unless `order.HasDeliveryInfo()`, so this command has to land before the order
+workflow reaches the delivery step. Once [[command|AcceptOrder]] has been called, changing the information here
+does not propagate — the [[entity|Package]] already holds its own copy of the addresses.
+
+## Effect
+
+Emits [[event|OrderDeliveryRequested]] when the order is dispatched for delivery.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package domain.delivery.events.v1;
+
+import "google/protobuf/timestamp.proto";
+import "delivery/common/v1/common.proto";
+
+// PackageRequiresHandlingEvent - canonical name: delivery.package.requires_handling.v1
+// Event when package requires manual handling
+message PackageRequiresHandlingEvent {
+  // Package ID
+  string package_id = 1;
+  // Order ID
+  string order_id = 2;
+  // Package status
+  domain.delivery.common.v1.PackageStatus status = 3;
+  // Reason for manual handling
+  string reason = 4;
+  // Requires handling at timestamp
+  google.protobuf.Timestamp requires_handling_at = 5;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 6;
+}

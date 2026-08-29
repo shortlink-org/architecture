@@ -1,0 +1,37 @@
+---
+id: ListOrders
+name: List orders
+version: 1.0.0
+summary: |
+  Returns a filtered list of orders.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Order
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`OrderService.List` on [[service|OMSService]].
+
+## Contract
+
+```proto
+rpc List(ListRequest) returns (ListResponse);
+```
+
+Straight query against [[container|oms-postgres]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

@@ -1,0 +1,43 @@
+---
+id: RemoveCartItem
+name: Remove cart item
+version: 1.0.0
+summary: |
+  Removes a good from a customer's cart.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Cart
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`CartService.Remove` on [[service|OMSService]] — the REMOVE signal on the [[entity|Cart]] workflow.
+
+## Contract
+
+```proto
+rpc Remove(RemoveRequest) returns (google.protobuf.Empty);
+```
+
+## Effect
+
+Emits [[event|CartItemRemoved]].
+
+> [!NOTE]
+> The codebase carries both a single-item and a batch handler (`remove_item` and `remove_items`) behind this one
+> RPC.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

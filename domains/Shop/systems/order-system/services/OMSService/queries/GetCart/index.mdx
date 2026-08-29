@@ -1,0 +1,40 @@
+---
+id: GetCart
+name: Get cart
+version: 1.0.0
+summary: |
+  Returns a customer's current cart.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Cart
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`CartService.Get` on [[service|OMSService]] — the only read on the cart service.
+
+## Contract
+
+```proto
+rpc Get(GetRequest) returns (GetResponse);
+```
+
+## No price
+
+The response carries items and quantities, not a total. Pricing is a separate call to
+[[query|CalculateCartTotal]], deliberately — a cart never stores a price, so it can never show a stale one.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

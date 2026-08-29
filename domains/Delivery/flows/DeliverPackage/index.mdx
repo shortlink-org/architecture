@@ -1,0 +1,169 @@
+---
+id: DeliverPackage
+name: "Deliver a package"
+version: "1.0.0"
+summary: "A package is accepted, dispatched to a courier, carried, and its outcome is reported back into the order."
+owners:
+  - shop-platform
+steps:
+  - id: "accept"
+    title: "AcceptOrder"
+    summary: "Called synchronously from the OMS Temporal activity; returns package_id"
+    message:
+      id: "AcceptOrder"
+      version: "1.0.0"
+    next_step:
+      id: "delivery"
+      label: "gRPC"
+
+  - id: "delivery"
+    title: "Delivery Service"
+    summary: "Creates the Package in ACCEPTED, writes the event to the outbox in the same transaction"
+    service:
+      id: "DeliveryService"
+      version: "1.0.0"
+    next_step:
+      id: "accepted"
+      label: "Publish"
+
+  - id: "accepted"
+    title: "PackageAccepted"
+    message:
+      id: "PackageAccepted"
+      version: "1.0.0"
+    next_step:
+      id: "assign"
+      label: "Dispatch"
+
+  - id: "assign"
+    title: "AssignOrder"
+    summary: "Manual courier id, or auto_assign — filter on status, capacity and zone, then sort by Haversine distance"
+    message:
+      id: "AssignOrder"
+      version: "1.0.0"
+    next_step:
+      id: "assigned"
+      label: "Publish"
+
+  - id: "assigned"
+    title: "PackageAssigned"
+    summary: "Published twice: protobuf to the status topic, JSON to the courier topic"
+    message:
+      id: "PackageAssigned"
+      version: "1.0.0"
+    next_step:
+      id: "courier"
+      label: "delivery.order.assigned.v1"
+
+  - id: "courier"
+    title: "Courier"
+    summary: "Emulated by CourierEmulationService in non-production; follows an OSRM route"
+    service:
+      id: "CourierEmulationService"
+      version: "1.0.0"
+    next_steps:
+      - id: "location"
+        label: "Continuously while moving"
+      - id: "picked_up"
+        label: "On collection"
+
+  - id: "location"
+    title: "CourierLocationReceived"
+    message:
+      id: "CourierLocationReceived"
+      version: "1.0.0"
+
+  - id: "picked_up"
+    title: "OrderPickedUp"
+    message:
+      id: "OrderPickedUp"
+      version: "1.0.0"
+    next_step:
+      id: "in_transit"
+      label: "Consumed by Delivery"
+
+  - id: "in_transit"
+    title: "PackageInTransit"
+    message:
+      id: "PackageInTransit"
+      version: "1.0.0"
+    next_step:
+      id: "delivered_report"
+      label: "Courier reaches the address"
+
+  - id: "delivered_report"
+    title: "OrderDelivered"
+    summary: "Carries the outcome — success or failure, not only success"
+    message:
+      id: "OrderDelivered"
+      version: "1.0.0"
+    next_steps:
+      - id: "package_delivered"
+        label: "Delivered"
+      - id: "package_not_delivered"
+        label: "Failed attempt"
+
+  - id: "package_delivered"
+    title: "PackageDelivered"
+    message:
+      id: "PackageDelivered"
+      version: "1.0.0"
+    next_step:
+      id: "oms"
+      label: "delivery.package.status.v1"
+
+  - id: "package_not_delivered"
+    title: "PackageNotDelivered"
+    summary: "Structured reason — CUSTOMER_NOT_AVAILABLE, WRONG_ADDRESS, ACCESS_DENIED, …"
+    message:
+      id: "PackageNotDelivered"
+      version: "1.0.0"
+    next_step:
+      id: "oms"
+      label: "delivery.package.status.v1"
+
+  - id: "oms"
+    title: "OMS Service"
+    summary: "Records the message id in the inbox, drops duplicates and stale updates, applies to the Order"
+    service:
+      id: "OMSService"
+      version: "1.0.0"
+    next_steps:
+      - id: "order_delivery_completed"
+        label: "On success"
+      - id: "order_delivery_failed"
+        label: "On failure"
+
+  - id: "order_delivery_completed"
+    title: "OrderDeliveryCompleted"
+    message:
+      id: "OrderDeliveryCompleted"
+      version: "1.0.0"
+
+  - id: "order_delivery_failed"
+    title: "OrderDeliveryFailed"
+    message:
+      id: "OrderDeliveryFailed"
+      version: "1.0.0"
+---
+
+<NodeGraph />
+
+## Where it starts
+
+The `AcceptOrder` call at the top is the last step of [[flow|Checkout]] — a synchronous gRPC call from a Temporal
+activity, not an event.
+
+## The return path is the interesting half
+
+Delivery does not update the order. It publishes to [[channel|delivery.package.status.v1]] and
+[[service|OMSService]] restates what it hears as the order's *own* events, so nothing outside this boundary has to
+subscribe to a delivery topic.
+
+Because Kafka delivers at least once and out of order, the consumer records each message id in
+`oms.delivery_inbox_messages` and drops updates that are stale for the order's current state before applying them.
+
+## What the flow does not cover
+
+[[event|PackageRequiresHandling]] — a package that cannot proceed and needs a human. Nothing consumes it, and the
+query that would surface such packages, [[query|GetPackagePool]], is not exposed over gRPC.

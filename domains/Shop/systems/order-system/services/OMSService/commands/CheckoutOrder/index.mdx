@@ -1,0 +1,52 @@
+---
+id: CheckoutOrder
+name: Checkout order
+version: 1.0.0
+summary: |
+  Turns a customer's cart into an order and returns the result.
+schemaPath: schema.proto
+owners:
+  - shop-platform
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: Order
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`OrderService.Checkout` on [[service|OMSService]] — the main path a customer takes, and the start of the
+[[flow|Checkout]] flow.
+
+## Contract
+
+```proto
+rpc Checkout(CheckoutRequest) returns (CheckoutResponse);
+```
+
+The only order command that returns a response body rather than `Empty`, because the caller needs the resulting
+order.
+
+## What it does
+
+Reads the [[entity|Cart]], prices it through [[query|CalculateCartTotal]], creates the [[entity|Order]], and
+empties the cart.
+
+If the order carries delivery information, the order workflow then runs the `RequestDelivery` activity — a
+synchronous gRPC [[command|AcceptOrder]] into [[domain|Delivery]].
+
+## Effects
+
+Emits [[event|OrderCreated]] and [[event|CartReset]]; [[event|OrderDeliveryRequested]] follows when the order
+ships.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

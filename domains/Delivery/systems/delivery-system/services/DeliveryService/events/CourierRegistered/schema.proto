@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package domain.delivery.events.v1;
+
+import "google/protobuf/timestamp.proto";
+import "delivery/common/v1/common.proto";
+
+// CourierRegisteredEvent - canonical name: delivery.courier.registered.v1
+// Event when a new courier is registered
+message CourierRegisteredEvent {
+  // Courier ID
+  string courier_id = 1;
+  // Courier name
+  string name = 2;
+  // Courier email
+  string email = 3;
+  // Courier phone
+  string phone = 4;
+  // Transport type
+  domain.delivery.common.v1.TransportType transport_type = 5;
+  // Courier status
+  domain.delivery.common.v1.CourierStatus status = 6;
+  // Registered at timestamp
+  google.protobuf.Timestamp registered_at = 7;
+  // OccurredAt is the timestamp when the event occurred
+  google.protobuf.Timestamp occurred_at = 8;
+}
