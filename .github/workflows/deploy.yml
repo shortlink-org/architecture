@@ -29,12 +29,12 @@ jobs:
           node-version: 24
           cache: npm
 
-      # enablement: true turns Pages on for the repo on the first run,
-      # so the site does not need to be enabled by hand in Settings
+      # Requires Pages to be enabled once in the repository:
+      # Settings -> Pages -> Build and deployment -> Source: GitHub Actions.
+      # The `enablement` input is deliberately not used — it needs a PAT,
+      # GITHUB_TOKEN cannot create the Pages site.
       - name: Configure Pages
         uses: actions/configure-pages@v6
-        with:
-          enablement: true
 
       - name: Install dependencies
         run: npm ci
