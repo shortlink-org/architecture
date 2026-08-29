@@ -8,9 +8,10 @@ Architecture catalog for [shortlink](https://github.com/shortlink-org), built wi
 The catalog documents shortlink's bounded contexts — the domains, systems, services, containers, entities, flows and
 architecture decisions that make up the platform.
 
-The prose is written here, not generated: it condenses and cross-links what the source repositories say. What *is*
-derived from upstream is checked automatically, so the catalog cannot drift out of step in silence — see
-[Staying in step with upstream](#staying-in-step-with-upstream).
+Nothing here is written as prose about the platform. Every page renders the structure the catalog can verify — the
+graph, the message table, the schema, the property table — and takes its description from the repository that
+defines the thing. What is derived is checked automatically, so the catalog cannot drift out of step in silence.
+See [Staying in step with upstream](#staying-in-step-with-upstream).
 
 ## Boundaries
 
@@ -37,6 +38,8 @@ npm run check:schemas  # compare copied schemas with upstream — runs in CI
 npm run sync:schemas   # rewrite them from upstream
 npm run check:adrs     # verify the generated decision records match upstream — runs in CI
 npm run sync:adrs      # regenerate them from upstream
+npm run check:docs     # verify the resource pages match their sources — runs in CI
+npm run sync:docs      # rewrite their bodies and the summaries that have a source
 ```
 
 > [!NOTE]
@@ -97,6 +100,26 @@ adr-platform-0043-likec4-for-c4-diagrams:
   origin: catalog
   location: adrs
 ```
+
+**Resource pages.** `scripts/sync-docs.mjs` owns the body of every other page — services, systems,
+domains, entities, channels, containers, flows and messages. A body holds the components that
+render catalog structure and nothing else; editing one by hand will be undone on the next run.
+
+Descriptions come from where the thing is defined:
+
+| | |
+|---|---|
+| services | the `> [!NOTE]` block in the service's own README |
+| events, commands, queries | the comment above the message in the protobuf contract |
+
+Domains, systems, entities, channels, containers and flows are modelling artefacts of this catalog
+and have no upstream text to draw on. Their frontmatter *is* the documentation — the steps of a
+flow, the properties of an entity, the address and delivery guarantee of a channel — and their
+one-line summary is left as it stands, because EventCatalog requires the field and there is
+nowhere else to get it from.
+
+Frontmatter is hand-maintained catalog structure and is never rewritten, apart from those
+summaries.
 
 ## Layout
 

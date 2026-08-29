@@ -17,6 +17,8 @@
     "check:schemas": "node scripts/sync-schemas.mjs --check",
     "sync:adrs": "node scripts/sync-adrs.mjs",
     "check:adrs": "node scripts/sync-adrs.mjs --check",
+    "sync:docs": "node scripts/sync-docs.mjs",
+    "check:docs": "node scripts/sync-docs.mjs --check",
     "check:c4": "likec4 validate likec4"
   },
   "dependencies": {
