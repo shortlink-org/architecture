@@ -103,3 +103,23 @@ Two further consequences worth naming:
   on every redirect.
 - **Failure mode is deliberately indistinguishable from absence.** Uniform 404s mean a Kratos outage looks exactly
   like "this link does not exist" — good for privacy, harder for on-call.
+
+## Deployment gap
+
+> [!WARNING]
+> In the Helm values present in these repositories, the chain this ADR describes is not wired up. Three separate
+> things are missing, and each alone would break it:
+>
+> 1. **`KRATOS_ADMIN_URL` is set nowhere.** `go-sdk/kratos` falls back to `http://kratos:4434`, an unqualified name
+>    that resolves inside the caller's own namespace — `shortlink-link`, where there is no Kratos.
+> 2. **`KRATOS_PUBLIC_URL` is set nowhere either.** The proxy's `ExternalServicesConfig` falls back to
+>    `http://kratos:4433`, with the same problem, so `/sessions/whoami` cannot succeed.
+> 3. **The Istio `Sidecar` egress allowlist does not include `auth/*`** — see [[system|istio-edge]] — so even a
+>    correct address would not be reachable from `shortlink-link`.
+>
+> The consequence follows from the ADR's own uniform-error rule: every request resolves as anonymous, public links
+> keep working through the cache, and **private links return 404 to everyone, including their owner**.
+>
+> This catalog reads the repositories, not the cluster. If these values are injected by something outside them, the
+> chain works and this note is wrong — but nothing in `shortlink-org/shortlink` or `shortlink-org/auth` supplies
+> them.

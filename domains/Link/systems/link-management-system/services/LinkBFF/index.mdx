@@ -55,3 +55,15 @@ with `limit`/`cursor` pagination.
 | Port | `7070` |
 | Health / readiness | `:9090` |
 | Upstream from | Oathkeeper (`:4455`) |
+| Rate limit | Envoy `local_ratelimit` — 200 tokens per second, per instance |
+
+## The route to Oathkeeper lives here
+
+The `HTTPRoute` that sends `https://shortlink.best/api` to `oathkeeper-proxy.auth:4455` is part of **this service's**
+chart, not the Oathkeeper chart. The service being protected declares how it is protected, and the `auth` namespace
+permits the cross-namespace reference with a `ReferenceGrant`.
+
+The Envoy rate limit is local to each sidecar rather than a shared quota, so the effective platform limit is 200/s
+multiplied by the replica count. Throttled responses carry `x-rate-limited: true`.
+
+See [[system|istio-edge]] for the full routing table and the policies attached to this workload.

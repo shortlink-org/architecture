@@ -16,14 +16,15 @@ steps:
       label: "HTTPS + session cookie"
 
   - id: "istio_gateway"
-    title: "Istio Gateway"
+    title: "Istio external-gateway"
+    summary: "HTTPRoute prefix /api on shortlink.best — declared by the BFF chart, pointing across into the auth namespace"
     externalSystem:
       name: "Istio Gateway"
-      summary: "Ingress load balancer and TLS termination"
-      url: "https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-control/"
+      summary: "Gateway API entry point; the cross-namespace backendRef is permitted by a ReferenceGrant in auth"
+      url: "https://gateway-api.sigs.k8s.io/"
     next_step:
       id: "oathkeeper"
-      label: "Forward to the access proxy"
+      label: "→ oathkeeper-proxy.auth:4455"
 
   - id: "oathkeeper"
     title: "Oathkeeper"
@@ -56,7 +57,7 @@ steps:
 
   - id: "upstream_service"
     title: "BFF / API service"
-    summary: "Istio RequestAuthentication verifies the JWT against the Oathkeeper JWKS"
+    summary: "Sidecar enforces RequestAuthentication against the Oathkeeper JWKS, then a local rate limit of 200/s"
     externalSystem:
       name: "BFF"
       summary: "Backend for Frontend in the Link boundary — receives Authorization: Bearer <JWT>"

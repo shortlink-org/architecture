@@ -48,6 +48,9 @@ The redirect path has the opposite profile to link management. It is read-only, 
 magnitude higher in volume, and its latency is a user-visible property of the product. Splitting it out means it can
 be cached, scaled and hardened independently — and that a slow write path cannot make redirects slow.
 
+The proxy chart is the only one in the platform with **no `RequestAuthentication` and no `AuthorizationPolicy`
+templates at all** — not disabled, absent. See [[system|istio-edge]].
+
 It is also the one place in the platform that sits outside the Zero Trust JWT rule in
 [[adr|adr-auth-0001-zero-trust-authentication-flow]]: the link chart's `AuthorizationPolicy` allows the
 `shortlink-link-proxy` service account through on mTLS without a JWT. Identity still travels, but as an

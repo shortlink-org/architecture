@@ -51,6 +51,20 @@ and a copy of the session-validation middleware into every service.
 The whoami call did not disappear — it moved. Oathkeeper still pays ~10–50ms per request, but it pays it once, in
 one place, and the services downstream became stateless with respect to authentication.
 
+## How traffic reaches it
+
+Oathkeeper does not claim its own traffic. The `HTTPRoute` that sends `https://shortlink.best/api` to
+`oathkeeper-proxy:4455` is declared by the **BFF chart** in the `shortlink-link` namespace, and this namespace
+permits the cross-namespace reference with three `ReferenceGrant`s — for `shortlink-link`, `temporal` and
+`shortlink-shop`.
+
+The full routing table is in [[system|istio-edge]].
+
+> [!NOTE]
+> The Oathkeeper access rule `kratos:public`, matching `https://shortlink.best/api/auth/<**>`, appears unreachable.
+> The Kratos chart declares its own `HTTPRoute` for `/api/auth` straight to `kratos-public:80`, and Gateway API
+> resolves overlapping prefixes by specificity — so `/api/auth` never reaches Oathkeeper for that rule to apply.
+
 ## Enforcement downstream
 
 Oathkeeper minting a token is only half of it. Each consuming service chart (`bff`, `link`, `metadata`) also

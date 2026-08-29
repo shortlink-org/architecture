@@ -63,9 +63,17 @@ flow from Kratos through `@ory/client` and renders whatever nodes come back.
 
 ## Endpoints
 
-| Surface | Address |
-|---------|---------|
-| Kratos public API (via edge) | `https://shortlink.best/api/auth` |
-| Kratos public (in cluster) | `http://kratos-public.auth.svc.cluster.local` |
-| Kratos admin | `:4434` — cluster-internal only |
-| Auth UI | `https://shortlink.best/auth` |
+| Surface | Address | Route |
+|---------|---------|-------|
+| Kratos public API | `https://shortlink.best/api/auth` | `HTTPRoute` → `kratos-public:80`, rewriting the prefix to `/` |
+| Kratos public (in cluster) | `http://kratos-public.auth.svc.cluster.local` | — |
+| Kratos admin | `:4434` | cluster-internal only, no route |
+| Auth UI | `https://shortlink.best/auth` | `HTTPRoute` → `auth-ui:8080` |
+
+Both routes attach to `external-gateway` in `istio-ingress` — see [[system|istio-edge]].
+
+> [!WARNING]
+> The Kratos **admin** API has no route and, more importantly, no reachable address configured for its callers. The
+> link service needs it to resolve emails for private links and falls back to `http://kratos:4434` in its own
+> namespace, while the Istio egress allowlist does not include `auth/*`. See
+> [[adr|adr-platform-0042-link-privacy-control]].

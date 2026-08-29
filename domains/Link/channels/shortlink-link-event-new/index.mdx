@@ -20,3 +20,12 @@ aggregate or version segment. Still declared by [[service|ProxyService]] and pro
 consumers should bind to the canonical topics instead.
 
 <NodeGraph />
+
+## Provisioning
+
+Unlike the canonical topics, this one has **no Strimzi `KafkaTopic`** in any chart — only a RabbitMQ `Exchange`
+template in the link chart, gated on `MQ_TYPE: rabbitmq`, and a runtime `setupExchange` call in the proxy.
+
+Production runs Kafka, where topics are declared explicitly. So on the deployed stack this exchange exists only if
+something auto-creates it.
+

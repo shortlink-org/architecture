@@ -150,3 +150,19 @@ cqrsmessage.NewShortlinkNamer("link")
 | Consumer group | `shortlink-link` |
 | DLQ | enabled, 5 retries |
 | Tracing | Tempo via OTLP, `grafana-tempo.grafana:4317` |
+
+Topics are provisioned by the chart as Strimzi `KafkaTopic` resources in the `kafka` namespace — 1 partition, 3
+replicas, **2 hour retention**, 30MB segments.
+
+## Deployment
+
+Exposed on the internal gateway by a `GRPCRoute` matching `infrastructure.rpc.link.v1.LinkService` and
+`grpc.reflection.v1.ServerReflection`, both backed by `shortlink-link-link:50051`.
+
+> [!NOTE]
+> Only the CRUD service is routed. `LinkCommandService` and `LinkQueryService` have no `GRPCRoute` — the CQRS pair is
+> not reachable through the internal gateway.
+
+Outbound calls go through `internal-gateway-istio.istio-ingress` with TLS and a mounted CA
+(`/etc/grpc/ca/ca.crt`), except for the one inbound exception: [[service|ProxyService]] connects directly and is
+allowed through the `AuthorizationPolicy` by service account over mTLS. Full picture in [[system|istio-edge]].

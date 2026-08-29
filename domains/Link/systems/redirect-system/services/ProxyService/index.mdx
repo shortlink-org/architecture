@@ -89,5 +89,11 @@ not only by deployment policy.
 |---|---|
 | Image | `registry.gitlab.com/shortlink-org/shortlink/proxy` |
 | Port | `3020` |
-| Link service | `shortlink-link-link.shortlink-link:50051` |
+| Public path | `https://shortlink.best/s/<hash>` — `HTTPRoute` prefix `/s` on `external-gateway` |
+| Link service | `shortlink-link-link.shortlink-link:50051` — direct, bypassing the internal gateway |
 | Broker | Kafka — `shortlink-kafka-bootstrap.kafka:9092` |
+| Istio policies | none — no `RequestAuthentication`, no `AuthorizationPolicy` |
+
+The route adds a `No-Vary-Search` response header listing the tracking parameters (`utm_*`, `gclid`, `fbclid`,
+`msclkid`, `srsltid`) that browsers may ignore when matching a prefetch — so a prefetched redirect is still a cache
+hit when the link is shared with different campaign tags.

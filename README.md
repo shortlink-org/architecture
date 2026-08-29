@@ -51,7 +51,7 @@ domains/<Domain>/
     index.mdx               system definition, actors, relationships
     services/               deployables
     containers/             databases and stores
-systems/                    external / third-party systems
+systems/                    shared systems — the Istio edge, external identity providers
 teams/                      ownership
 ```
 

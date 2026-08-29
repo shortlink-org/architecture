@@ -19,3 +19,18 @@ Produced by [[service|LinkService]]. As with the update topic, it is provisioned
 subscriber is registered in the services documented here.
 
 <NodeGraph />
+
+## Provisioning
+
+Declared as a Strimzi `KafkaTopic` in the `kafka` namespace by the chart of the service that publishes it:
+
+| | |
+|---|---|
+| Partitions | 1 |
+| Replicas | 3 |
+| Retention | **2 hours** (`retention.ms: 7200000`) |
+| Segment size | 30MB |
+
+> [!WARNING]
+> Two hours of retention is short for an event log. A consumer that is down longer than that does not catch up — it
+> skips whatever expired. Replaying history is not available on this channel.

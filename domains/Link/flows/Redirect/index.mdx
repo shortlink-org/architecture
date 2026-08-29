@@ -11,8 +11,19 @@ steps:
     actor:
       name: "Visitor"
     next_step:
+      id: "gateway"
+      label: "GET https://shortlink.best/s/{hash}"
+
+  - id: "gateway"
+    title: "Istio external-gateway"
+    summary: "HTTPRoute prefix /s on shortlink.best. No auth policy on this path — the proxy chart deploys none"
+    externalSystem:
+      name: "Istio Gateway"
+      summary: "Gateway API entry point in the istio-ingress namespace"
+      url: "https://gateway-api.sigs.k8s.io/"
+    next_step:
       id: "proxy"
-      label: "GET /{hash}"
+      label: "→ shortlink-link-proxy:3020"
 
   - id: "proxy"
     title: "Proxy Service"
