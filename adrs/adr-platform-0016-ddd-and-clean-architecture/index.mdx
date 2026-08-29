@@ -1,0 +1,50 @@
+---
+id: adr-platform-0016-ddd-and-clean-architecture
+name: "ADR-0016 (platform): Domain-Driven Design and Clean Architecture"
+version: 1.0.0
+summary: Services are built with rich domain models and value objects, structured so business rules depend on nothing external.
+status: accepted
+date: 2024-02-08
+owners:
+  - platform
+decisionMakers:
+  - platform
+appliesTo:
+  - type: domain
+    id: Link
+  - type: entity
+    id: Link
+badges:
+  - content: Architecture
+    backgroundColor: blue
+    textColor: blue
+---
+
+> Source: [docs/ADR/decisions/0016](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0016-use-domain-driven-developer.md)
+
+## Context
+
+The goal is to build robust, scalable solutions on the first attempt, and to align the software with the business
+domain well enough that teams can talk about it without translation.
+
+## Decision
+
+### Domain-Driven Design
+
+- **Rich domain models** that encapsulate behaviour, not just data. A code generator,
+  `protoc-gen-rich-model`, creates them from protobuf definitions.
+- **Value objects** with private setters and public getters only.
+
+### Clean Architecture
+
+Structure the system so it is independent of frameworks, UI, database and any external agency, and so business rules
+are testable without any of them.
+
+## Consequences
+
+This ADR is visible directly in the code the catalog documents. The [[entity|Link]] aggregate has no exported
+fields, is built through a builder, wraps `URL`, `Time` and `Email` in value objects, and returns a copy of its
+allowlist so callers cannot mutate it. `IsPublic()` is behaviour on the model rather than a flag read by a service.
+
+The proxy takes the same principle to its conclusion with an explicit anti-corruption layer —
+[[adr|adr-proxy-0004-anti-corruption-layer]] — so its domain never imports another service's generated types.

@@ -1,0 +1,47 @@
+---
+id: adr-platform-0005-singleflight-debouncing
+name: "ADR-0005 (platform): Use singleflight for debouncing"
+version: 1.0.0
+summary: Duplicate concurrent requests for the same key collapse into a single execution, protecting against cache-miss stampedes.
+status: accepted
+date: 2023-10-15
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0022-cache-strategy
+badges:
+  - content: Performance
+    backgroundColor: orange
+    textColor: orange
+---
+
+> Source: [docs/ADR/decisions/0005](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0005-use-singleflight-for-debouncing.md)
+
+## Context
+
+A surge of duplicate requests — most often during a cache miss on a popular key — produces redundant computation,
+unnecessary load and higher latency.
+
+## Decision
+
+Use the `singleflight` pattern: for a given function and key, only one execution happens and every waiting caller
+receives that one result.
+
+1. Identify the places with frequent duplicate requests
+2. Apply `singleflight.Group` there
+3. Let waiting requests share the single computation
+
+Available per language: [Go](https://pkg.go.dev/golang.org/x/sync/singleflight),
+[Rust](https://docs.rs/singleflight/latest/singleflight/), [Python](https://pypi.org/project/singleflight/).
+
+## Consequences
+
+**Gained** — less redundant work, lower latency, protection against duplicate-request surges.
+
+**Cost** — a long computation can hand back data that is already stale by the time waiters receive it, and the locks
+and channels themselves add overhead. Both are to be watched through profiling rather than assumed away.
+
+This is the platform-level answer to the same problem the [[domain|Link]] domain solves at the edge with a Redis
+cache in front of the redirect path.

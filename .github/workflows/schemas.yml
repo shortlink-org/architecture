@@ -1,0 +1,29 @@
+name: Schema drift
+
+# The catalog carries copies of protobuf and OpenAPI files from the source repositories.
+# This checks they still match upstream. It deliberately does NOT run on every pull request:
+# upstream moving is not a reason to fail an unrelated PR — only a reason to know about it.
+on:
+  schedule:
+    # 06:00 UTC daily
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/sync-schemas.mjs'
+      - '**/*.proto'
+      - 'domains/Link/systems/link-management-system/services/LinkBFF/api.yaml'
+
+jobs:
+  check:
+    name: Compare catalog schemas with upstream
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Check for drift
+        run: npm run check:schemas

@@ -1,0 +1,58 @@
+---
+id: adr-platform-0021-microservice-structure
+name: "ADR-0021 (platform): Microservice structure"
+version: 1.0.0
+summary: A fixed directory layout, README contents and initial ADR for every service in the monorepo.
+status: accepted
+date: 2023-04-08
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0011-architecture-documentation
+badges:
+  - content: Process
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0021](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0021-microservice-structure.md)
+
+## Context
+
+Services need a predictable structure.
+
+## Decision
+
+```
+├── ops/dockerfile/{{serviceName}}.Dockerfile
+├── ops/docker-compose/application/{{serviceName}}/{{serviceName}}.yml
+├── ops/Helm/{{boundary context}}/{{serviceName}}/Chart.yaml
+├── .gitlab/ci/workflows/matrix_build_base.yml
+├── .gitlab/ci/workflows/matrix_build_helm.yml
+└── boundaries/{{serviceName}}
+    ├── application/
+    ├── docs/ADR/decisions/0001-init.md
+    ├── cmd/
+    ├── di/
+    ├── domain/
+    ├── infrastructure/
+    ├── tests/
+    ├── Makefile
+    └── README.md
+```
+
+**README** must contain: project description, C4 container diagram, C4 component diagram, ERD (if needed), and C4
+use case diagrams — with a sequence diagram per use case.
+
+**`0001-init.md`** must contain: Status, Goal, Docs.
+
+## Consequences
+
+This convention is what made building this catalog possible without reading every line of code: use cases are
+enumerated in each README, ADRs are always in the same place, and `domain/` versus `infrastructure/` tells you which
+code is the model and which is plumbing.
+
+It also explains a gap: `boundaries/api` has no `ops/Helm` chart, which under this structure means it is not
+deployed.

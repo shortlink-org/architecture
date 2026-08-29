@@ -1,0 +1,57 @@
+---
+id: adr-platform-0018-service-metrics
+name: "ADR-0018 (platform): Standard service metrics"
+version: 1.0.0
+summary: A fixed set of Prometheus metrics — SLA/SLO/SLI, cache, load and resource — that every service exposes.
+status: accepted
+date: 2023-12-29
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0023-naming-prometheus-metrics
+  - id: adr-platform-0008-product-metrics
+badges:
+  - content: Observability
+    backgroundColor: green
+    textColor: green
+---
+
+> Source: [docs/ADR/decisions/0018](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0018-service-metrics.md)
+
+## Context
+
+Operational decisions need consistent, comparable data across services.
+
+## Decision
+
+**SLA / SLO / SLI**
+
+- `service_availability_ratio` — gauge, uptime over total time
+- `http_request_duration_seconds` — histogram, response times
+- `error_rate_per_minute` — counter
+
+**Cache**
+
+- `cache_hit_total`, `cache_miss_total` — counters
+- `cache_hit_ratio` — derived from the two above
+- `hot_key_access_frequency` — gauge
+
+**Load** — `requests_per_second`, `transactions_per_second`, `queries_per_second`, `response_time_seconds`,
+`error_rate_percentage`
+
+**Resources** — `network_traffic_bytes`, `cpu_usage_percentage`, `ram_usage_bytes`, `disk_usage_bytes`
+
+**Other** — `queue_size`, `process_count`, `thread_count`
+
+Names follow [[adr|adr-platform-0023-naming-prometheus-metrics]].
+
+## Consequences
+
+The cache metrics are the ones with teeth in this catalog: they are what makes the hit ratio on the
+[[container|proxy-redis-cache]] an observable number rather than an assumption — which matters, because the proxy
+bypasses that cache entirely for authenticated requests.
+
+The ADR notes its own risk: distributed systems make some of these hard to measure accurately, and quantitative
+metrics can be over-trusted.

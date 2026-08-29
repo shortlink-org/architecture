@@ -1,0 +1,41 @@
+---
+id: adr-platform-0039-ui-accessibility
+name: "ADR-0039 (platform): UI accessibility"
+version: 1.0.0
+summary: Respect user accessibility preferences in CSS, starting with prefers-reduced-transparency.
+status: accepted
+date: 2023-11-08
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: UI
+    backgroundColor: purple
+    textColor: purple
+---
+
+> Source: [docs/ADR/decisions/0039](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0039-ui-accessibility.md)
+
+## Context
+
+The UI needs to be accessible to people with disabilities.
+
+## Decision
+
+Honour the browser's accessibility media queries, beginning with
+[`prefers-reduced-transparency`](https://developer.chrome.com/blog/css-prefers-reduced-transparency/) for visual
+impairments:
+
+```css
+.bg-white {
+  @media (prefers-reduced-transparency: reduce) {
+    --tw-bg-opacity: 0;
+  }
+}
+```
+
+## Consequences
+
+Accessibility is treated as a system preference to respond to rather than a setting to build — the browser already
+knows what the user needs, and the UI's job is not to override it.

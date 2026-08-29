@@ -70,9 +70,14 @@ else; the enriched view is exclusive to `LinkQueryService`.
 
 ## Authorization
 
-Link permissions live in [[system|permission-system]] in the [[domain|Auth]] domain — the `link` definition in the
-SpiceDB schema (`reader`, `writer`, `linkteam`, `view = reader + writer + linkteam->view_all_links`) describes links
-but is owned there.
+Two mechanisms govern a link, split by operation rather than duplicated
+([[adr|adr-platform-0042-link-privacy-control]]):
 
-The service also carries its own, narrower model on the aggregate itself: an email allowlist, where empty means
-public. Two mechanisms describe who may see a link, in two different places — worth knowing before changing either.
+- **List, Create, Update, Delete and team RBAC** go through [[system|permission-system]] in the [[domain|Auth]]
+  domain — the SpiceDB `link` definition (`reader`, `writer`, `linkteam`,
+  `view = reader + writer + linkteam->view_all_links`) describes links but is owned there.
+- **GET and redirect** use the email allowlist on the aggregate itself, resolving the caller's email through the
+  Kratos Admin API. SpiceDB is not consulted.
+
+Both paths are wired into the service: its DI graph takes a SpiceDB permission client *and* a Kratos client
+side by side.

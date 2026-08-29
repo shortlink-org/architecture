@@ -1,0 +1,43 @@
+---
+id: adr-platform-0014-observability-tooling
+name: "ADR-0014 (platform): Standard observability tooling"
+version: 1.0.0
+summary: OpenTelemetry for tracing and metrics, Prometheus for monitoring, and the Grafana LGTM stack for storage and display.
+status: accepted
+date: 2023-01-21
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0009-naming-spans-and-attributes
+  - id: adr-platform-0018-service-metrics
+badges:
+  - content: Observability
+    backgroundColor: green
+    textColor: green
+---
+
+> Source: [docs/ADR/decisions/0014](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0014-observability.md)
+
+## Context
+
+Monitoring, tracing and logging need one consistent set of tools across the platform.
+
+## Decision
+
+- **[OpenTelemetry](https://opentelemetry.io/)** for tracing and metrics
+- **[Prometheus](https://prometheus.io/)** via prometheus-operator, notifying Slack, email and Telegram
+- **Grafana LGTM stack** — Grafana, [Loki](https://github.com/grafana/loki) for logs,
+  [Tempo](https://grafana.com/docs/tempo/latest/) for traces, plus
+  [OnCall](https://grafana.com/oss/oncall/) and [Pyroscope](https://grafana.com/oss/pyroscope/)
+- **[Kiali](https://kiali.io/)** for service mesh observability alongside Istio
+
+Instrumentation follows [the RED method](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/),
+and services expose a build-info metric so the running version is queryable.
+
+## Consequences
+
+Every service in this catalog points its tracer at the same place — `grafana-tempo.grafana:4317` for the link
+service, `grafana-tempo.grafana:6831` for Kratos and Oathkeeper. A trace that starts at the edge and ends in a
+database call lands in one system.

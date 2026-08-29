@@ -1,0 +1,57 @@
+---
+id: adr-platform-0028-go-debug-concurrency
+name: "ADR-0028 (platform): Debugging concurrency in Go"
+version: 1.0.0
+summary: A cookbook of four techniques — pprof labels via middleware, recorded Delve sessions, goleak in TestMain, and deadlock-detecting mutexes.
+status: accepted
+date: 2023-11-12
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Cookbook
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0028](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0028-go-and-debug-concurrency.md)
+
+## Context
+
+The tools for debugging concurrency in Go exist; knowing how to use them is the gap.
+
+## Decision
+
+Record the techniques as a cookbook.
+
+### 1. pprof labels through middleware
+
+Inject meaningful pprof labels into HTTP and gRPC handlers from a middleware, so profiles can be sliced by request
+attributes rather than only by function.
+
+### 2. Record on a remote server, replay locally
+
+Run the remote service under Delve in `rr` mode, record a session while reproducing the issue, transfer the
+recording, and step through it locally.
+
+### 3. `uber/goleak` in `TestMain`
+
+```go
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+
+	os.Exit(m.Run())
+}
+```
+
+Goroutine leaks surface in the test suite instead of in production.
+
+### 4. Deadlock-detecting mutexes
+
+[go-deadlock](https://github.com/sasha-s/go-deadlock) as a drop-in `(RW)Mutex` — the approach CockroachDB uses.
+
+## Consequences
+
+An ADR that records *how* rather than *what*. Its value is that a technique used once by one person becomes
+available to everyone, which is the same reason this catalog exists.

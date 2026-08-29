@@ -1,0 +1,56 @@
+---
+id: adr-platform-0022-cache-strategy
+name: "ADR-0022 (platform): Cache strategy"
+version: 1.0.0
+summary: Internal and external caching, an explicit eviction policy per use case, error caching, and a formula for deciding whether the cache is helping.
+status: accepted
+date: 2023-12-29
+owners:
+  - platform
+decisionMakers:
+  - platform
+appliesTo:
+  - type: container
+    id: proxy-redis-cache
+related:
+  - id: adr-proxy-0007-redis-caching
+  - id: adr-platform-0005-singleflight-debouncing
+badges:
+  - content: Performance
+    backgroundColor: orange
+    textColor: orange
+---
+
+> Source: [docs/ADR/decisions/0022](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0022-cache.md)
+
+## Context
+
+Faster responses, less load on external services, and resilience — balanced against data freshness.
+
+## Decision
+
+**Internal caching** for data needing rapid access (no network hop); **external caching** for larger volumes
+(scales independently). Strategies mixed per use case: Cache Aside, Cache Through, Cache Ahead.
+
+**Eviction** — the ADR catalogues thirteen policies (FIFO, LIFO, Random, **LRU**, MRU, LFU, Belady's OPT, Second
+Chance, Clock, 2Q, SLRU, TLRU, LRU-k) and requires the choice to match the access pattern rather than defaulting.
+
+**Error caching** — cache error responses too, so repeated requests for known-bad data do not reach the source. This
+also blunts cache-miss attacks. Expiry for cached errors must be set carefully to avoid persisting a stale failure.
+
+**Effectiveness** — measured, not assumed:
+
+```
+AverageTime = DBAccessTime * CacheMissRate + CacheAccessTime
+```
+
+A miss rate above ~0.8 means the cache is likely counterproductive. Hit/miss rates and response times go to
+Prometheus.
+
+## Consequences
+
+The [[container|proxy-redis-cache]] is this ADR applied: negative caching of missing links is the "error caching"
+clause, with a shorter TTL than positive entries exactly as the warning requires.
+
+The measurement rule is the part worth holding the implementation to — the proxy bypasses its cache entirely for
+authenticated requests, so its hit rate says nothing about that traffic.

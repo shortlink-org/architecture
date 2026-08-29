@@ -16,8 +16,8 @@ summary: Positive and negative cache in front of the link service, on the redire
 
 ## What is this?
 
-The reason redirects are fast. [[service|ProxyService]] checks Redis before calling
-[[service|LinkService]] over gRPC.
+The reason **anonymous** redirects are fast. [[service|ProxyService]] checks Redis before calling
+[[service|LinkService]] over gRPC — but only when the request carries no user id.
 
 | | TTL |
 |---|---|
@@ -25,6 +25,15 @@ The reason redirects are fast. [[service|ProxyService]] checks Redis before call
 | Negative — link missing | ~5 minutes |
 
 Key format: `${CACHE_KEY_PREFIX}:hash:${hash}`.
+
+### Authenticated requests bypass it
+
+The key is the hash alone, with nothing about the caller — so a private link could otherwise be cached by one
+visitor and served to another. `LinkServiceRepository.findByHash` avoids that bluntly: if a `user_id` is present it
+goes straight to the adapter and never touches Redis. The code says so, with a `TODO` about a user-aware key.
+
+The consequence is a real one for capacity planning: a logged-in visitor pays a gRPC call on every single redirect,
+and the cache hit ratio describes anonymous traffic only.
 
 ### Graceful degradation
 

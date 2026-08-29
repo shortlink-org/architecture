@@ -1,0 +1,38 @@
+---
+id: adr-platform-0011-architecture-documentation
+name: "ADR-0011 (platform): Architecture documentation with C4 and PlantUML"
+version: 1.0.0
+summary: Architecture is documented with the C4 model, drawn in PlantUML with C4-PlantUML.
+status: accepted
+date: 2023-01-07
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Documentation
+    backgroundColor: purple
+    textColor: purple
+---
+
+> Source: [docs/ADR/decisions/0011](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0011-application-architecture-documentation.md)
+
+## Context
+
+The platform needs a standard way to document its architecture. Models evaluated: [C4](https://c4model.com/), 4+1,
+ARC42, ArchiMate, diagrams.net. Tools evaluated: Archi (including archi → neo4j → grafana), PlantUML, C4-PlantUML,
+OpenAPI, Gherkin, Miro, Notion, [diagrams](https://diagrams.mingrammer.com/).
+
+## Decision
+
+- The **C4 model** for describing architecture
+- **PlantUML** with [C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML) for drawing it
+
+## Consequences
+
+This is why nearly every service README in the monorepo opens with a `plantuml` block including
+`C4_Container.puml`, and why boundaries carry a `0003-c4-system` ADR of their own.
+
+It is also the decision this catalog partly supersedes in practice: EventCatalog generates context and resource
+diagrams from frontmatter rather than from hand-drawn PlantUML. The two coexist — the C4 diagrams in the source
+repositories remain the authored view, the catalog's are derived.

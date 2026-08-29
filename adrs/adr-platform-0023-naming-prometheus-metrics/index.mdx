@@ -1,0 +1,41 @@
+---
+id: adr-platform-0023-naming-prometheus-metrics
+name: "ADR-0023 (platform): Prometheus metrics naming"
+version: 1.0.0
+summary: Metric names follow Prometheus naming best practices, with labels for extra dimensions rather than name variants.
+status: accepted
+date: 2023-05-22
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0018-service-metrics
+badges:
+  - content: Observability
+    backgroundColor: green
+    textColor: green
+---
+
+> Source: [docs/ADR/decisions/0023](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0023-naming-prometheus-metrics.md)
+
+## Context
+
+Metric names had no consistent convention, which makes them hard to read and to query.
+
+## Decision
+
+1. Descriptive names that accurately represent what is measured
+2. One convention across all metrics
+3. Labels to group related time series, rather than encoding dimensions into the name
+
+Follow the [Prometheus naming best practices](http://prometheus.io/docs/practices/naming/) and
+[instrumentation best practices](http://prometheus.io/docs/practices/instrumentation/#use-labels).
+
+## Consequences
+
+Cross-service queries become possible: `http_request_duration_seconds` means the same thing whether it comes from
+the Go link service or the TypeScript proxy, so one dashboard can compare them.
+
+The rule about labels is the one that pays off later — a metric named per-endpoint cannot be aggregated, while one
+labelled per-endpoint can be either aggregated or split.

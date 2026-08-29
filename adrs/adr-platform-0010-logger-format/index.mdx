@@ -1,0 +1,47 @@
+---
+id: adr-platform-0010-logger-format
+name: "ADR-0010 (platform): Logger format"
+version: 1.0.0
+summary: Structured JSON logs with a fixed field set, emitted as OpenTelemetry span events.
+status: accepted
+date: 2022-12-21
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Observability
+    backgroundColor: green
+    textColor: green
+---
+
+> Source: [docs/ADR/decisions/0010](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0010-logger-format.md)
+
+## Context
+
+Logging needs one standard shape across all services.
+
+## Decision
+
+JSON, with this field set:
+
+```json
+{
+  "level": "info",
+  "msg": "message",
+  "timestamp": "2006-01-02T15:04:05.999999999Z07:00",
+  "caller": "main.go:42",
+  "trace_id": "trace_id"
+}
+```
+
+Application logs are recorded as [span events](https://uptrace.dev/opentelemetry/distributed-tracing.html#event)
+named `log`, with the context carried in semantic attributes:
+
+- `level` — one of `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`
+- `msg`, `timestamp` (RFC3339Nano), `caller`, `trace_id` (hex-encoded)
+
+## Consequences
+
+Logs are not a separate stream to correlate after the fact — they hang off the trace. `trace_id` in every line is
+what makes a log searchable from a Tempo trace and back again.

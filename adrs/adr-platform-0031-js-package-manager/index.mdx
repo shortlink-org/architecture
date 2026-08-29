@@ -1,0 +1,49 @@
+---
+id: adr-platform-0031-js-package-manager
+name: "ADR-0031 (platform): JavaScript package manager"
+version: 1.0.0
+summary: pnpm replaces npm for JavaScript projects, for build speed and disk usage.
+status: accepted
+date: 2024-02-21
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Tooling
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0031](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0031-js-package-manager.md)
+
+## Context
+
+`npm` was producing slow builds and inefficient disk use.
+
+## Decision
+
+Adopt [`pnpm`](https://pnpm.io/), which uses hard links and a shared content-addressed store.
+
+[Bun](https://bun.sh/) was considered and rejected as too new.
+
+**Migration**
+
+```shell
+npm install -g pnpm
+rm -rf node_modules
+pnpm install
+rm -rf package-lock.json
+```
+
+In CI, `corepack enable && corepack prepare pnpm@latest-8 --activate`, with
+`"preinstall": "npx only-allow pnpm"` in `package.json` to enforce it.
+
+## Consequences
+
+Faster builds and less disk, at the cost of updating every build script and pipeline.
+
+> [!NOTE]
+> This catalog does not follow the decision — it is built with `npm` and carries a `package-lock.json`, because
+> EventCatalog's own tooling and the GitHub Actions cache are set up that way. Worth aligning, or worth recording as
+> a deliberate exception.

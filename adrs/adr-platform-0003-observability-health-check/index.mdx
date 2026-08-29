@@ -1,0 +1,51 @@
+---
+id: adr-platform-0003-observability-health-check
+name: "ADR-0003 (platform): Standard health and metrics endpoints"
+version: 1.0.0
+summary: Every service exposes /metrics, /healthz and /ready on port 9090, wired into Docker HEALTHCHECK and Kubernetes probes.
+status: accepted
+date: 2022-10-28
+owners:
+  - platform
+decisionMakers:
+  - platform
+appliesTo:
+  - type: service
+    id: LinkService
+  - type: service
+    id: MetadataService
+  - type: service
+    id: AuthService
+badges:
+  - content: Observability
+    backgroundColor: green
+    textColor: green
+---
+
+> Source: [docs/ADR/decisions/0003](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0003-observability-health-check.md)
+
+## Context
+
+Service health needs to be monitorable and metrics collectable in one standard way across the platform.
+
+## Decision
+
+Three HTTP endpoints on **port 9090** in every service:
+
+| Endpoint | Returns |
+|----------|---------|
+| `/metrics` | Prometheus-formatted metrics |
+| `/healthz` | JSON with `status`: `ok` or `error` |
+| `/ready` | JSON with `status`: `ok` or `error` |
+
+A Docker `HEALTHCHECK` calls `/healthz`, and Kubernetes probes are generated from a shared Helm template:
+
+```gotemplate
+{{- include "shortlink-common.probe" .Values.deploy | indent 6 }}
+```
+
+## Consequences
+
+This is the decision that lets every service's `AuthorizationPolicy` carve out the same paths. The Istio policies
+in the [[domain|Auth]] boundary allow `/live`, `/ready`, `/healthz` and `/metrics` without a JWT precisely because
+they are guaranteed to mean the same thing everywhere.

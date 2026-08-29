@@ -1,0 +1,34 @@
+---
+id: adr-platform-0040-ui-kit
+name: "ADR-0040 (platform): UI kit"
+version: 1.0.0
+summary: A shared React component library, developed and tested through Storybook.
+status: accepted
+date: 2024-01-13
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: UI
+    backgroundColor: purple
+    textColor: purple
+---
+
+> Source: [docs/ADR/decisions/0040](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0040-ui-kit.md)
+
+## Context
+
+The React projects need a unified UI approach for consistency and faster development.
+
+## Decision
+
+Build a UI kit of the essential components, with Storybook for interactive development and testing. Referenced
+libraries for component coverage: [Sailboat UI](https://sailboatui.com/),
+[Pines](https://devdojo.com/pines), [Float UI](https://floatui.com/demo).
+
+## Consequences
+
+The kit is published and consumed across the front ends — the [[domain|Auth]] UI depends on
+`@shortlink-org/ui-kit`, which is what keeps the Kratos self-service screens looking like the rest of the product
+despite living in a different repository.

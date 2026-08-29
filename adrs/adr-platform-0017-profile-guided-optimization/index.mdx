@@ -1,0 +1,49 @@
+---
+id: adr-platform-0017-profile-guided-optimization
+name: "ADR-0017 (platform): Profile-guided optimization"
+version: 1.0.0
+summary: Go services are built with PGO from continuously collected production profiles.
+status: accepted
+date: 2023-02-15
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Performance
+    backgroundColor: orange
+    textColor: orange
+---
+
+> Source: [docs/ADR/decisions/0017](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0017-profile-guided-optimization.md)
+
+## Context
+
+[Profile-guided optimization](https://go.dev/doc/pgo) feeds a CPU profile from representative runs back into the
+compiler, which uses it to make better decisions — inlining hot functions more aggressively, for example. From Go
+1.20, PGO improves performance by roughly 2–4% on a representative set of programs.
+
+## Decision
+
+Use [Pyroscope](https://pyroscope.io/docs/) for continuous profiling, and PGO when building.
+
+**Pipeline**
+
+1. Run the application with continuous profiling attached
+2. Load and merge profiles in Pyroscope
+3. Build the Docker image with the new PGO profile
+4. Push and deploy
+
+```bash
+curl -s http://localhost:7071/debug/pprof/profile\?seconds\=30 > ./cpu.out
+go tool pprof -proto a.pprof b.pprof > default.pgo
+go build -o app -pgo=auto ./boundaries/api/api-gateway/cmd/api.go
+```
+
+## Consequences
+
+A few percent, for the cost of a profiling loop in the build pipeline. The convention that makes it work is a
+`default.pgo` file in the main package directory, which `go build -pgo=auto` picks up without further configuration.
+
+This is also why every Go service in the catalog exposes a pprof endpoint — profiling is a build input, not only a
+debugging tool.

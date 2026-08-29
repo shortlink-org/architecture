@@ -71,10 +71,19 @@ func (m *Link) IsPublic() bool {
 Emails are normalised before comparison, and the allowlist is validated by a chain of specifications — format,
 duplicates, non-empty entries, and a maximum size.
 
-> [!NOTE]
-> This is the second access model for a link. The first is the SpiceDB `link` definition in [[domain|Auth]], with
-> `reader` / `writer` / `linkteam` relations. They are not connected: the allowlist lives on the aggregate in
-> [[container|link-postgres]], the relations live in SpiceDB, and neither is derived from the other.
+### How this relates to SpiceDB
+
+A link is governed by two mechanisms, and they are split **by operation** rather than duplicated —
+[[adr|adr-platform-0042-link-privacy-control]] is the decision that draws the line:
+
+| Operation | Enforced by |
+|-----------|-------------|
+| GET / redirect | this allowlist, with the caller's email fetched from the Kratos Admin API |
+| List, Create, Update, Delete, team RBAC | SpiceDB relations |
+
+The SpiceDB side is [[adr|adr-auth-0003-access-control-schema]]. It is deliberately **not** consulted on the
+redirect path. A public link is returned without calling either
+Kratos or SpiceDB at all.
 
 ## Not on the aggregate
 

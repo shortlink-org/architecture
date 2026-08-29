@@ -1,0 +1,36 @@
+---
+id: adr-platform-0024-remote-development-tool
+name: "ADR-0024 (platform): Development tool for remote Kubernetes"
+version: 1.0.0
+summary: Skaffold, chosen over Devfile.io and GitHub Codespaces, for developing against remote Kubernetes.
+status: accepted
+date: 2023-05-24
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Tooling
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0024](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0024-selecting-a-development-tool-for-remote-machine.md)
+
+## Context
+
+Developing, debugging and deploying from a local machine to a remote Kubernetes environment needs tool support.
+Candidates: [Skaffold](https://skaffold.dev/), [Devfile.io](https://devfile.io/),
+[GitHub Codespaces](https://github.com/features/codespaces).
+
+## Decision
+
+**Skaffold** — it supports rapid local Kubernetes development, is lightweight, and covers the whole development
+lifecycle.
+
+## Consequences
+
+The team needs training on it, and its resource usage needs watching. The ADR explicitly leaves the door open:
+the alternatives should be reassessed if the need arises.
+
+A `skaffold.yaml` at the monorepo root is the artefact of this decision.

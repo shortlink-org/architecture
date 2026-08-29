@@ -1,0 +1,40 @@
+---
+id: adr-platform-0020-k6
+name: "ADR-0020 (platform): k6 for integration tests"
+version: 1.0.0
+summary: Integration and load tests are written in k6, with distributed tracing enabled.
+status: accepted
+date: 2024-01-05
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Testing
+    backgroundColor: yellow
+    textColor: yellow
+---
+
+> Source: [docs/ADR/decisions/0020](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0020-k6.md). The source file is titled "30. k6" while living at 0020 — the number in the heading is a typo in the original.
+
+## Context
+
+Integration tests are needed to verify correctness beyond the unit level.
+
+## Decision
+
+Use [k6](https://k6.io/), built with the distributed tracing extension:
+
+```bash
+go install go.k6.io/xk6/cmd/xk6@latest
+xk6 build --with github.com/grafana/xk6-distributed-tracing@latest
+```
+
+## Consequences
+
+Tests emit traces into the same system as production traffic, so a failing integration test can be inspected in
+Tempo rather than only through its assertion output.
+
+The [[domain|Link]] boundary carries k6 suites for exactly this —
+`ops/link/draft/test/e2e/k6_rpc_cqrs_link_v1.yaml` and `k6_rpc_sitemap_v1.yaml` exercise the CQRS and sitemap RPC
+surfaces.

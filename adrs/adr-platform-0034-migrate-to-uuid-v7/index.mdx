@@ -1,0 +1,41 @@
+---
+id: adr-platform-0034-migrate-to-uuid-v7
+name: "ADR-0034 (platform): Migrate to UUID v7"
+version: 1.0.0
+summary: Primary keys move from UUID v4 to time-ordered UUID v7 for better index locality.
+status: accepted
+date: 2024-07-20
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0004-uuid-primary-keys
+badges:
+  - content: Data
+    backgroundColor: blue
+    textColor: blue
+---
+
+> Source: [docs/ADR/decisions/0034](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0034-migrate-to-uuid-v7.md)
+
+## Context
+
+[[adr|adr-platform-0004-uuid-primary-keys]] settled on UUIDs; v4 is random, which is exactly what makes it poor for
+indexing. [UUID v7](https://datatracker.ietf.org/doc/html/draft-peabody-dispatch-new-uuid-format) is time-ordered.
+
+## Decision
+
+Migrate primary keys from UUID v4 to UUID v7 — updating both the database schema and the code that generates and
+handles keys.
+
+## Consequences
+
+**Gained** — sortable keys, so index and range operations behave; chronological ordering for free; better caching
+and clustering behaviour.
+
+**Cost** — schema and application changes, and potentially some downtime during migration. The ADR sets out the
+sequence: schema migration, code changes, staging test, then a planned production migration.
+
+This amends rather than replaces the earlier decision: the identifier is still a UUID, and only its generation
+changes.

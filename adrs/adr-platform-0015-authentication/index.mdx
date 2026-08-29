@@ -1,0 +1,48 @@
+---
+id: adr-platform-0015-authentication
+name: "ADR-0015 (platform): Authentication"
+version: 1.0.0
+summary: Authentication is delegated to a third-party OIDC provider rather than implemented in-house.
+status: accepted
+date: 2023-01-30
+owners:
+  - platform
+decisionMakers:
+  - platform
+appliesTo:
+  - type: domain
+    id: Auth
+related:
+  - id: adr-auth-0001-zero-trust-authentication-flow
+badges:
+  - content: Security
+    backgroundColor: red
+    textColor: red
+---
+
+> Source: [docs/ADR/decisions/0015](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0015-authentication.md)
+
+## Context
+
+The platform needs to decide how users are authenticated. The options surveyed were OIDC over OAuth 2.0
+(RFC 6749, 6750, 8414, 8705, 8693), JWT (RFC 7515, 7516, 7519, 7523), and 2FA.
+
+## Decision
+
+Use third-party authentication rather than building it — it is more secure, and it is not a service the team wants
+to operate itself.
+
+Candidates researched: [Keycloak](https://www.keycloak.org/), [ory/hydra](https://www.ory.sh/hydra/),
+[dexidp/dex](https://dexidp.io/).
+
+The ADR ends with a plan rather than a choice: *"Step 1. Try to use Keycloak — install it, try it, make a decision
+and update this ADR."*
+
+## Consequences
+
+> [!NOTE]
+> The ADR was never updated with the outcome. What the platform actually runs is **Ory Kratos** for authentication
+> and **SpiceDB** for authorization — see [[domain|Auth]] and
+> [[adr|adr-auth-0001-zero-trust-authentication-flow]]. Keycloak is not part of the request path.
+>
+> The principle in this ADR held; the specific next step recorded in it did not become the answer.

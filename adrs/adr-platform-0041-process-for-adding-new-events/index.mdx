@@ -1,0 +1,60 @@
+---
+id: adr-platform-0041-process-for-adding-new-events
+name: "ADR-0041 (platform): Process for adding new events"
+version: 1.0.0
+summary: A six-step process for adding an event or command to a go-sdk/cqrs service, from protobuf definition through registration to documentation.
+status: accepted
+date: 2025-01-26
+owners:
+  - platform
+decisionMakers:
+  - platform
+appliesTo:
+  - type: domain
+    id: Link
+  - type: service
+    id: LinkService
+related:
+  - id: adr-platform-0002-canonical-event-naming
+badges:
+  - content: Process
+    backgroundColor: gray
+    textColor: gray
+  - content: Messaging
+    backgroundColor: yellow
+    textColor: yellow
+---
+
+> Source: [docs/ADR/decisions/0041](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0041-process-for-adding-new-events.md)
+
+## Context
+
+After migrating to `go-sdk/cqrs`, adding an event needed a standard process. Without one, developers were liable to
+skip registration in the CQRS registry, use the wrong name, omit required metadata, break protobuf evolution rules,
+or forget to update consumers and documentation.
+
+## Decision
+
+Six steps for any service on `go-sdk/cqrs`:
+
+1. **Define the protobuf message** in `boundaries/{service}/internal/domain/{domain}/v1/{domain}_events.proto`
+2. **Generate the protobuf code**
+3. **Register it in the CQRS registry**
+4. **Update publishing / subscribing code**
+5. **Update DI wiring** if needed
+6. **Test and document**
+
+Requirements on the message itself:
+
+- Canonical naming per [[adr|adr-platform-0002-canonical-event-naming]]
+- An `occurred_at` timestamp field
+- Lowercase, underscored field names, with comments describing the event's purpose
+- Protobuf schema evolution rules — fields are added, never removed
+
+## Consequences
+
+Every event in the [[domain|Link]] domain follows this shape, which is why they are so uniform: `LinkCreated`,
+`LinkUpdated`, `LinkDeleted` and `MetadataExtracted` all carry `occurred_at` alongside their payload.
+
+Step 6 is the one this catalog exists to make real. The schema files under `domains/` are checked against upstream
+by `npm run check:schemas`, so an event that is added without documenting it here shows up as drift.

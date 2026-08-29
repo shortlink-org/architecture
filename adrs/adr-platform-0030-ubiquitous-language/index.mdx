@@ -1,0 +1,43 @@
+---
+id: adr-platform-0030-ubiquitous-language
+name: "ADR-0030 (platform): Ubiquitous language"
+version: 1.0.0
+summary: Each subdomain maintains a GLOSSARY.md, and its terms are used in code, docs and conversation alike.
+status: accepted
+date: 2024-01-13
+owners:
+  - platform
+decisionMakers:
+  - platform
+appliesTo:
+  - type: domain
+    id: Link
+  - type: domain
+    id: Auth
+related:
+  - id: adr-platform-0016-ddd-and-clean-architecture
+badges:
+  - content: DDD
+    backgroundColor: purple
+    textColor: purple
+---
+
+> Source: [docs/ADR/decisions/0030](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0030-ubiquitous-language.md)
+
+## Context
+
+A diverse team hits communication problems when the same word means different things to different people. The
+Ubiquitous Language practice from Domain-Driven Design addresses it by building one shared vocabulary.
+
+## Decision
+
+Establish and use a ubiquitous language in all communication, code and documentation, developed collaboratively and
+evolving with the project. A **`GLOSSARY.md`** is created and maintained for each subdomain.
+
+## Consequences
+
+This ADR is the direct ancestor of the ubiquitous language pages in this catalog. The
+[Link](/docs/domains/Link/language) and [Auth](/docs/domains/Auth/language) glossaries started from the
+`GLOSSARY.md` files this decision requires, extended with terms found in the code and configuration.
+
+The ADR is honest about the cost: a shared language only stays shared if it is maintained as the project changes.

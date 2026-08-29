@@ -1,0 +1,45 @@
+---
+id: adr-platform-0035-use-cloudflare
+name: "ADR-0035 (platform): Use Cloudflare"
+version: 1.0.0
+summary: All traffic goes through Cloudflare for DDoS protection, CDN, WAF and SSL — and Envoy's response headers are stripped.
+status: accepted
+date: 2024-07-27
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Security
+    backgroundColor: red
+    textColor: red
+  - content: Infrastructure
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0035](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0035-use-cloudflare.md)
+
+## Context
+
+Growing traffic brought security, performance and scalability pressure: protection against DDoS, content delivery
+optimisation, and traffic management.
+
+## Decision
+
+Route all incoming and outgoing traffic through Cloudflare — CDN, DDoS protection, WAF and SSL — in front of the
+Istio/Envoy edge and the Kubernetes cluster.
+
+**Drop existing Envoy response headers** so internal architecture details are not exposed, replacing them with
+Cloudflare's own.
+
+## Consequences
+
+**Gained** — a smaller attack surface, lower latency worldwide, centralised traffic management with real-time
+insight, and less load on origin servers.
+
+**Cost** — a hard dependency on a third party for critical infrastructure, premium service costs, and privacy
+considerations from the Google Analytics integration that comes with it.
+
+For this catalog it means the public entry point sits one layer above anything documented here: the
+[[system|access-proxy-system]] is the *cluster* edge, not the internet edge.

@@ -81,7 +81,8 @@ Worth being explicit about, because three different guarantees coexist here:
 |------|-----------|
 | Create / update / delete a link | Strongly consistent — one writer, one Postgres |
 | Metadata on a link | Eventually consistent — arrives when the target page has been fetched |
-| Redirect resolution | Stale up to the cache TTL — nothing invalidates on update or delete |
+| Anonymous redirect | Stale up to the cache TTL — nothing invalidates on update or delete |
+| Authenticated redirect | Always current — the cache is bypassed whenever a user id is present |
 
 ## Key decisions
 
@@ -93,9 +94,14 @@ Worth being explicit about, because three different guarantees coexist here:
 
 ## Relationship to Auth
 
-Link is protected by, but does not implement, the platform's access control. The SpiceDB `link` definition —
-`reader`, `writer`, `linkteam`, `view = reader + writer + linkteam->view_all_links` — lives in
-[[system|permission-system]] in the [[domain|Auth]] domain.
+Link depends on [[domain|Auth]] twice over, for two different things, and
+[[adr|adr-platform-0042-link-privacy-control]] is what separates them:
 
-The [[entity|Link]] aggregate additionally carries an email allowlist of its own, where empty means public. Two
-independent models describe who may see a link.
+| Operation | Mechanism | Owned by |
+|-----------|-----------|----------|
+| List, Create, Update, Delete, team RBAC | SpiceDB relations | Auth |
+| GET / redirect | email allowlist on the aggregate, caller's email read from the Kratos Admin API | Link |
+
+So the redirect path never touches SpiceDB, and a public link is served without consulting Kratos either. The
+[[entity|Link]] aggregate holds the allowlist; the SpiceDB `link` definition lives in
+[[system|permission-system]].

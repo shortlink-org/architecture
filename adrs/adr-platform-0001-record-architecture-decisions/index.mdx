@@ -1,0 +1,36 @@
+---
+id: adr-platform-0001-record-architecture-decisions
+name: "ADR-0001 (platform): Record architecture decisions"
+version: 1.0.0
+summary: Architectural decisions are recorded as ADRs in the Michael Nygard format.
+status: accepted
+date: 2021-09-23
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Process
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0001](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0001-record-architecture-decisions.md)
+
+## Context
+
+Architectural decisions made on the project need to be recorded.
+
+## Decision
+
+Use Architecture Decision Records in the format [described by Michael Nygard](http://thinkrelevance.com/blog/2011/11/15/documenting-architecture-decisions),
+with [adr-tools](https://github.com/npryce/adr-tools) as a lightweight toolset.
+
+## Consequences
+
+Every decision in this catalog's ADR collection traces back to this one. The format — Context, Decision,
+Consequences, and a Status — is why each boundary carries its own `docs/ADR/decisions` directory, and why this
+catalog can mirror them one-to-one.
+
+The ADR itself records a reservation: an [RFC process](https://philcalcado.com/2018/11/19/a_structured_rfc_process.html)
+is noted as worth considering as an alternative.

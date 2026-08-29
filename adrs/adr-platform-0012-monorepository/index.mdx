@@ -1,0 +1,38 @@
+---
+id: adr-platform-0012-monorepository
+name: "ADR-0012 (platform): Use a monorepository"
+version: 1.0.0
+summary: The platform is developed in a single repository.
+status: accepted
+date: 2023-01-14
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0036-nx-monorepo
+badges:
+  - content: Process
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0012](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0012-use-monorepository.md)
+
+## Context
+
+The platform spans many services and libraries. Reference: [Understanding Monorepos](https://monorepo.tools/#understanding-monorepos).
+
+## Decision
+
+Use a monorepository.
+
+## Consequences
+
+Services are grouped by bounded context under `boundaries/`, which is the structure this catalog's domains mirror.
+
+The decision is not absolute in practice: the [[domain|Auth]] boundary lives in its own repository
+(`shortlink-org/auth`), and this catalog is a third. The monorepo holds the platform's core, not everything —
+which is why the schema sync in this repository has to fetch from more than one source.
+
+[[adr|adr-platform-0036-nx-monorepo]] covers the tooling attempt on top of this decision, and its rollback.

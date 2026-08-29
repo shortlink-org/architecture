@@ -43,7 +43,8 @@ dictionary:
       Privacy is derived, not stored as a flag — `IsPublic()` is `len(allowedEmails) == 0`. Emails are normalised
       before comparison and validated by a chain of specifications: format, duplicates, non-empty, allowlist size.
 
-      This is the link service's own model and is separate from the SpiceDB relations in the Auth domain.
+      This is the mechanism that governs **reads** — GET and redirect. Writes and team RBAC go through SpiceDB
+      instead. The two are split by operation, not duplicated.
     icon: Lock
 
   - id: Meta

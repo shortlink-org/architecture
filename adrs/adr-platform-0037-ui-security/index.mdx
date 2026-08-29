@@ -1,0 +1,36 @@
+---
+id: adr-platform-0037-ui-security
+name: "ADR-0037 (platform): UI security — CAPTCHA"
+version: 1.0.0
+summary: Cloudflare Turnstile, via the React Turnstile component, instead of a traditional CAPTCHA.
+status: accepted
+date: 2023-05-16
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0035-use-cloudflare
+badges:
+  - content: Security
+    backgroundColor: red
+    textColor: red
+---
+
+> Source: [docs/ADR/decisions/0037](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0037-ui-security.md)
+
+## Context
+
+The user interface needs protection against spam and automated data extraction.
+
+## Decision
+
+Use [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) — a CAPTCHA alternative that can be embedded
+without routing traffic through Cloudflare and that usually verifies a visitor without showing them a challenge.
+
+In the UI, the [React Turnstile](https://docs.page/marsidev/react-turnstile/) component.
+
+## Consequences
+
+Protection against automated abuse with, in most cases, no visible step for the user — the ADR is explicit that
+where a challenge does appear, the extra friction is accepted deliberately.

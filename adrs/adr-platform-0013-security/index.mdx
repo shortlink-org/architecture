@@ -1,0 +1,56 @@
+---
+id: adr-platform-0013-security
+name: "ADR-0013 (platform): Secrets, cluster scanning and supply chain"
+version: 1.0.0
+summary: SOPS for secrets, kubescape for cluster scanning, SLSA with SBOM and provenance for the supply chain.
+status: accepted
+date: 2023-01-16
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Security
+    backgroundColor: red
+    textColor: red
+---
+
+> Source: [docs/ADR/decisions/0013](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0013-security.md)
+
+## Context
+
+Secret data needs protecting during deployment, and the deployment pipeline itself needs to be verifiable.
+
+## Decision
+
+### Secrets
+
+[SOPS](https://github.com/mozilla/sops), with [helm-secrets](https://github.com/jkroepke/helm-secrets/wiki/Usage)
+for Helm and the [ArgoCD integration](https://github.com/jkroepke/helm-secrets/blob/main/docs/ArgoCD%20Integration.md)
+for GitOps.
+
+```mermaid
+graph TD
+    A(GIT) -- push --> B(GitLab CI/CD)
+    B -- run --> C[Helm]
+    C -- use --> D(helm secrets)
+    B -- pull --> F[ArgoCD]
+    F -- run --> G[Kubernetes]
+    G -- run --> H[Service]
+```
+
+### Cluster
+
+[kubescape](https://github.com/kubescape/kubescape) scans the cluster for security issues.
+
+### Supply chain
+
+[SLSA](https://slsa.dev/), with `--sbom=true` and `--provenance=true` on Docker builds.
+
+## Consequences
+
+Encrypted files are committed rather than kept out of the repository — the `*.sops.yaml` and `*.sops.json` files in
+the [[domain|Auth]] boundary (the Kratos secret, the courier config, and Oathkeeper's JWKS) are this decision in
+practice.
+
+Decryption becomes a deployment prerequisite: nothing can be applied without SOPS access.

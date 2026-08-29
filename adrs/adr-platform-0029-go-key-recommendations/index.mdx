@@ -1,0 +1,38 @@
+---
+id: adr-platform-0029-go-key-recommendations
+name: "ADR-0029 (platform): Go key recommendations"
+version: 1.0.0
+summary: golangci-lint, Uber's nilaway for nil-pointer analysis, and the Uber and Google Go style guides.
+status: accepted
+date: 2023-11-17
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Go
+    backgroundColor: blue
+    textColor: blue
+---
+
+> Source: [docs/ADR/decisions/0029](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0029-go-key-recommendations.md)
+
+## Context
+
+Code quality in the Go codebase needs tooling and a style baseline: linting, nil-pointer handling, and a consistent
+guide.
+
+## Decision
+
+1. **`golangci-lint`** as the primary linter
+2. **[`nilaway`](https://github.com/uber-go/nilaway)** specifically for nil-pointer errors
+3. **[Uber Go Style Guide](https://github.com/uber-go/guide)**, plus the
+   [Google Style Guide](https://google.github.io/styleguide/go/index)
+
+## Consequences
+
+The `//nolint:` directives scattered through the services in this catalog are the visible edge of this decision —
+each one is an explicit, reviewable exception rather than a silently disabled check.
+
+`nilaway` is the notable pick: nil dereferences are the failure mode this codebase guards against structurally, which
+is also why domain models like [[entity|Link]] check `m == nil` inside their own getters.

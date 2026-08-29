@@ -1,0 +1,42 @@
+---
+id: adr-platform-0008-product-metrics
+name: "ADR-0008 (platform): Product metrics per service"
+version: 1.0.0
+summary: A Grafana dashboard per service covering production, persistence, security and compliance requirements.
+status: accepted
+date: 2022-12-19
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0018-service-metrics
+badges:
+  - content: Observability
+    backgroundColor: green
+    textColor: green
+---
+
+> Source: [docs/ADR/decisions/0008](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0008-product-metrics-by-services.md)
+
+## Context
+
+Product metrics need to be visible per service, not only in aggregate.
+
+## Decision
+
+Build a Grafana dashboard of product metrics for each service.
+
+## Consequences
+
+The dashboard covers four non-functional groups:
+
+| Group | Metrics |
+|-------|---------|
+| Production | RPS / TPS / latency |
+| Persistence | SLA / RTO / RPO |
+| Security | PCI DSS, internal, external |
+| Compliance | GDPR, ФЗ‑152, KYC-AML |
+
+Compliance sits alongside latency in the same dashboard requirement, which makes it an operational property rather
+than a document reviewed once.

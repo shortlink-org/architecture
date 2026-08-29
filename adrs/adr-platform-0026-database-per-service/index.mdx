@@ -1,0 +1,57 @@
+---
+id: adr-platform-0026-database-per-service
+name: "ADR-0026 (platform): Database per service"
+version: 1.0.0
+summary: Each service owns a private database, provisioned as its own Postgres cluster by the CrunchyData operator.
+status: accepted
+date: 2023-06-11
+owners:
+  - platform
+decisionMakers:
+  - platform
+appliesTo:
+  - type: container
+    id: link-postgres
+  - type: container
+    id: kratos-postgres
+badges:
+  - content: Data
+    backgroundColor: blue
+    textColor: blue
+---
+
+> Source: [docs/ADR/decisions/0026](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0026-pattern-database-per-service.md)
+
+## Context
+
+Each microservice has its own requirements, which argues for its own database — the
+[database per service](https://microservices.io/patterns/data/database-per-service.html) pattern.
+
+## Decision
+
+Implement database-per-service, using the CrunchyData Postgres operator. Each service gets its own Postgres cluster
+through the `PostgresCluster` CRD.
+
+```mermaid
+sequenceDiagram
+    participant A as PostgresCluster CRD
+    participant B as DatabaseInitSQL
+    participant C as Migration
+    participant D as Kube-secret-fetcher
+    participant E as Local developer
+    A->>B: Create Postgres cluster
+    B->>C: Set up with admin credentials
+    C->>D: Initialize schema
+    D-->>E: Fetch URI from secret
+```
+
+## Consequences
+
+Services stay loosely coupled and each has limited access to only its own data.
+
+This is why [[container|link-postgres]] and [[container|kratos-postgres]] are separate clusters with separate
+secrets (`shortlink-postgres-pguser-link`, `shortlink-postgres-pguser-kratos`) rather than schemas in one database —
+and why the [[domain|Link]] read model has to be built from events instead of a join.
+
+The ADR is candid about the cost: duplicated data, harder cross-service transactions and queries, and more databases
+to operate.

@@ -12,7 +12,9 @@
     "federate": "eventcatalog federate",
     "export": "eventcatalog export",
     "lint": "eventcatalog-linter",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sync:schemas": "node scripts/sync-schemas.mjs",
+    "check:schemas": "node scripts/sync-schemas.mjs --check"
   },
   "dependencies": {
     "@eventcatalog/core": "4.9.0",

@@ -1,0 +1,47 @@
+---
+id: adr-platform-0036-nx-monorepo
+name: "ADR-0036 (platform): Nx monorepo"
+version: 1.0.0
+summary: Nx was adopted to manage the JavaScript monorepo, then dropped in favour of grouping by bounded context.
+status: deprecated
+date: 2023-04-27
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0012-monorepository
+badges:
+  - content: Deprecated
+    backgroundColor: red
+    textColor: red
+---
+
+> Source: [docs/ADR/decisions/0036](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0036-nx-monorepo.md)
+
+## Context
+
+The project has multiple interdependent applications and libraries. Alternatives considered: multi-repo, Turborepo,
+and Nx. Turborepo was judged less mature.
+
+## Decision
+
+Set up an Nx monorepo.
+
+## Status: deprecated
+
+Nx is no longer used. The applications and libraries are grouped **by bounded context** instead — the
+`boundaries/` layout this catalog's domains are built on.
+
+The reasons recorded for dropping it:
+
+- Nx controls dependencies between packages poorly
+- Having all packages in one repository made them hard to manage
+
+## Consequences
+
+The intended benefits — cross-package sharing, easier maintenance, better CI/CD — were pursued through
+domain boundaries rather than through a build tool.
+
+Worth keeping visible rather than deleting: it records that the tool was tried, and why the current structure looks
+the way it does.

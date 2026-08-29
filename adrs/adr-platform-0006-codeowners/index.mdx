@@ -1,0 +1,48 @@
+---
+id: adr-platform-0006-codeowners
+name: "ADR-0006 (platform): CODEOWNERS and team hierarchy"
+version: 1.0.0
+summary: Ownership is assigned to teams rather than to people, through a group / workspace / project hierarchy.
+status: accepted
+date: 2022-12-10
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Process
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0006](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0006-codeowner.md)
+
+## Context
+
+A `CODEOWNERS` file defines who is responsible for code in a repository.
+
+## Decision
+
+Organise ownership as a hierarchy, following
+[GitLab's guidance on organizational hierarchies that scale](https://about.gitlab.com/blog/2024/07/22/best-practices-to-set-up-organizational-hierarchies-that-scale/):
+
+```
+- groupCompany
+  - project-workspace-1
+    - project-1
+    - project-2
+  - project-workspace-N
+    - project-N
+  - maintainers
+    - frontend
+    - backend
+    - database
+```
+
+## Consequences
+
+People are added to teams, and **teams** — not individuals — are assigned to projects. Membership changes then
+require no change to ownership configuration.
+
+This is the model the catalog's own `teams/` collection mirrors: resources are owned by
+[[team|link-platform]], [[team|auth-platform]] and [[team|platform]], not by named individuals.

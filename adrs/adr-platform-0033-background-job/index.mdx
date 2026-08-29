@@ -1,0 +1,51 @@
+---
+id: adr-platform-0033-background-job
+name: "ADR-0033 (platform): Background job processing"
+version: 1.0.0
+summary: A menu of options — Kubernetes Jobs and CronJobs, Temporal, plain cron, Go tickers, and message queues — with their trade-offs recorded.
+status: accepted
+date: 2024-04-13
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Infrastructure
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0033](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0033-background-job.md)
+
+## Context
+
+Background work is needed for big-data operations, long-running tasks, push notifications, report generation and
+newsletters — and for cache maintenance: invalidation, hot-cache management, pre-caching.
+
+## Decision
+
+Rather than one tool, the ADR records the options and when each fits:
+
+- **Kubernetes CronJob** — recurring, schedule-based work
+- **Kubernetes Job** — one-off tasks run to completion
+- **[Temporal](https://temporal.io/)** — complex workflows with retries, failures and state between steps
+- **Standard cron** — simple time-based scheduling
+- **Go** — [robfig/cron](https://github.com/robfig/cron), or native tickers and timers
+- **[Apache Pulsar](https://pulsar.apache.org/)** — decoupling job requests from execution
+
+| Technology | Benefit | Challenge |
+|------------|---------|-----------|
+| Standard cron | Simple, reliable | Single node, no fault tolerance |
+| Kubernetes CronJob | Scales, cluster-wide | More setup, needs Kubernetes |
+| Temporal | Robust workflows, retries | Steeper learning curve, resource-heavy |
+| Go ticker/timer | Precise, in-process | Manual state management for distributed tasks |
+
+## Consequences
+
+Temporal is deployed — the Oathkeeper access rules in the [[domain|Auth]] boundary route
+`temporal.shortlink.best` through `cookie_session` authentication, so its web UI sits behind the same edge as
+everything else.
+
+Cache maintenance is listed as a driver here, which connects this to
+[[adr|adr-platform-0022-cache-strategy]] — though the [[container|proxy-redis-cache]] currently relies on TTL expiry
+rather than any scheduled invalidation.

@@ -1,0 +1,40 @@
+---
+id: adr-platform-0004-uuid-primary-keys
+name: "ADR-0004 (platform): Use UUID as primary keys"
+version: 1.0.0
+summary: Entities are identified by UUID rather than by database sequences.
+status: accepted
+date: 2022-12-10
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0034-migrate-to-uuid-v7
+badges:
+  - content: Data
+    backgroundColor: blue
+    textColor: blue
+---
+
+> Source: [docs/ADR/decisions/0004](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0004-use-uuid-as-primary-keys.md) · issue [#762](https://github.com/shortlink-org/shortlink/issues/762)
+
+## Context
+
+Entities need an identifier that is unique across a service, not only within one table.
+
+## Decision
+
+Use UUIDs as primary keys.
+
+The ADR collects the trade-off literature it was decided against — [UUID or GUID as Primary Keys? Be Careful!](https://tomharrisonjr.com/uuid-or-guid-as-primary-keys-be-careful-7b2aa3dcb439),
+[Primary Keys: IDs versus GUIDs](https://blog.codinghorror.com/primary-keys-ids-versus-guids/) — along with the
+per-database notes for MySQL and PostgreSQL defaults.
+
+## Consequences
+
+Identifiers can be generated without a round trip to the database, which matters for services that create entities
+before persisting them.
+
+The known cost of random UUIDs — poor index locality — is what
+[[adr|adr-platform-0034-migrate-to-uuid-v7]] later addresses by moving to time-ordered v7.

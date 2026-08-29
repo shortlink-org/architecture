@@ -31,8 +31,12 @@ repository:
 Every visit to a short link lands here. The proxy takes the hash, resolves it to the original URL, and issues the
 redirect — then publishes [[event|LinkRedirected]] out of band.
 
-It is the one service in the domain that is anonymous by design: redirects do not require a JWT. The link chart
-grants the `shortlink-link-proxy` service account mTLS access to [[service|LinkService]] without one.
+Redirects do not require a JWT — the link chart grants the `shortlink-link-proxy` service account mTLS access to
+[[service|LinkService]] without one. But the proxy is not identity-blind: it reads the Kratos session on every
+request and forwards `x-user-id` in gRPC metadata, empty when there is no session.
+
+It never decides anything with that identity. Authorization for private links happens entirely inside
+[[service|LinkService]] — see [[adr|adr-platform-0042-link-privacy-control]].
 
 ## Architecture diagram
 
@@ -43,19 +47,28 @@ grants the `shortlink-link-proxy` service account mTLS access to [[service|LinkS
 ## Request path
 
 ```mermaid
-flowchart LR
+flowchart TB
     V[Visitor] --> P[Proxy]
-    P --> C{"Redis cache"}
-    C -->|hit| R[302 to original URL]
-    C -->|miss| L["LinkService<br/>gRPC / Connect"]
+    P --> W["Kratos /sessions/whoami"]
+    W --> D{"user_id present?"}
+    D -->|"yes — authenticated"| L["LinkService<br/>gRPC, x-user-id"]
+    D -->|"no — anonymous"| C{"Redis cache"}
+    C -->|hit| R["302 to original URL"]
+    C -->|miss| L
     L --> C
     L --> R
+    L -->|"ErrPermissionDenied"| NF["404 Not Found"]
     R -.->|async| K["link.link.redirected.v1"]
 ```
 
 Caching is two-sided ([[adr|adr-proxy-0007-redis-caching]]): found links are cached for ~1 hour, *misses* for ~5
 minutes. Negative caching is the interesting half — it stops a flood of requests for a hash that does not exist from
 reaching [[service|LinkService]] at all. If Redis is down the proxy degrades gracefully and calls through.
+
+> [!NOTE]
+> The cache is **skipped entirely** when a `user_id` is present. `LinkServiceRepository.findByHash` branches before
+> the cache lookup, with an explicit `TODO` about a user-aware cache key. Every redirect by a logged-in visitor
+> therefore costs a gRPC call — the cache accelerates anonymous traffic only.
 
 ## Architecture
 

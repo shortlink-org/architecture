@@ -1,0 +1,36 @@
+---
+id: adr-platform-0019-front-end-testing
+name: "ADR-0019 (platform): Front-end and API testing"
+version: 1.0.0
+summary: Cypress with Testing Library for the front end, Postman and Newman for APIs.
+status: accepted
+date: 2023-03-18
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Testing
+    backgroundColor: yellow
+    textColor: yellow
+---
+
+> Source: [docs/ADR/decisions/0019](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0019-front-end-testing.md)
+
+## Context
+
+A growing application needs a reliable front-end testing strategy, and a consistent way to test APIs.
+
+## Decision
+
+- [Cypress](https://www.cypress.io/) with
+  [Cypress Testing Library](https://testing-library.com/docs/cypress-testing-library/intro/) for the front end
+- Postman for manual API testing, Newman for the same collections in CI
+
+## Consequences
+
+Issues are caught earlier, at the cost of maintaining a browser-driven suite.
+
+> [!NOTE]
+> The UI boundary in the monorepo now carries a `playwright-report/` directory, which suggests the front-end tooling
+> has moved on from Cypress without this ADR being updated. Treat the Cypress half as historical until confirmed.

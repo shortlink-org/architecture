@@ -1,0 +1,57 @@
+---
+id: adr-platform-0027-orm-and-golang
+name: "ADR-0027 (platform): ORM and Go"
+version: 1.0.0
+summary: pgxpool, squirrel, sqlc and a custom protoc-gen-go-orm rather than a full ORM; the search for a better option continues.
+status: accepted
+date: 2023-10-26
+owners:
+  - platform
+decisionMakers:
+  - platform
+appliesTo:
+  - type: service
+    id: LinkService
+badges:
+  - content: Data
+    backgroundColor: blue
+    textColor: blue
+---
+
+> Source: [docs/ADR/decisions/0027](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0027-orm-and-golang.md)
+
+## Context
+
+`ent` was tried and found limiting: it needs a custom driver for database interactions and lacks OpenTelemetry
+support, which is not optional given [[adr|adr-platform-0014-observability-tooling]].
+
+The current setup is a combination rather than a single tool:
+
+1. `pgxpool` for PostgreSQL
+2. `squirrel` as the SQL builder
+3. `protoc-gen-go-orm` to generate ORM-like structures from protobuf
+4. `sqlc` for type-safe Go from SQL
+
+`protoc-gen-go-orm` goes furthest — it generates filter code directly from protobuf types for both PostgreSQL and
+MongoDB, removing hand-written filter logic per type.
+
+## Decision
+
+Keep the current combination and continue evaluating alternatives, with [Bun](https://bun.uptrace.dev/) as the
+leading candidate.
+
+| | ent | Bun | sqlc | go-orm (custom) |
+|---|---|---|---|---|
+| Custom driver | Yes | pgx | No | pgx |
+| OpenTelemetry | No | Yes | Yes | No |
+| Ease of use | Low | High | High | Medium |
+| SQL building | Good | Excellent | Excellent | Good |
+| Community | Medium | Medium | High | Low |
+
+## Consequences
+
+The generated filter code is visible in the [[domain|Link]] boundary — `filter/Link.mongo.orm.go` and
+`filter/Link.ram.orm.go` are produced from the protobuf type, not written by hand, which is part of why the link
+service can support several stores at all.
+
+An open decision carries its own cost: the ADR is a status report as much as a choice, and the answer may change.

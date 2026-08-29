@@ -1,0 +1,37 @@
+---
+id: adr-platform-0007-network-optimization
+name: "ADR-0007 (platform): Network and serialization optimization"
+version: 1.0.0
+summary: Use protobuf FieldMask for partial gRPC reads and writes, and a faster JSON encoder than the standard library.
+status: accepted
+date: 2022-12-14
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Performance
+    backgroundColor: orange
+    textColor: orange
+---
+
+> Source: [docs/ADR/decisions/0007](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0007-optimization-network.md)
+
+## Context
+
+Microservices in high-performance, scalable applications need to use network and CPU efficiently.
+
+## Decision
+
+**Network / gRPC** — use protobuf `FieldMask`, following Netflix's write-ups on
+[using FieldMask](https://netflixtechblog.com/practical-api-design-at-netflix-part-1-using-protobuf-fieldmask-35cfdc606518)
+and [FieldMask for mutation operations](https://netflixtechblog.com/practical-api-design-at-netflix-part-2-protobuf-fieldmask-for-mutation-operations-2e75e1d230e4).
+
+**Serialization** — use `github.com/segmentio/encoding/json` in place of `encoding/json`. `sonic` benchmarks faster
+still but has a problem with `cgocheck2`.
+
+## Consequences
+
+FieldMask is visible in the [[domain|Link]] contracts: the `Link` message in both the RPC API and the proxy's copy
+carries a `google.protobuf.FieldMask field_mask` field, so a caller can read or update a subset of a link rather
+than the whole object.

@@ -2,7 +2,7 @@
 id: Redirect
 name: "Follow a short link"
 version: "1.0.0"
-summary: "A visitor opens a short link; the proxy resolves it from cache or the link service and redirects, then reports the visit."
+summary: "A visitor opens a short link; the proxy resolves the Kratos session, the link service applies the privacy model, and the visitor is redirected or given a 404."
 owners:
   - link-platform
 steps:
@@ -16,25 +16,69 @@ steps:
 
   - id: "proxy"
     title: "Proxy Service"
-    summary: "Checks the Redis cache first — positive and negative entries both count as a hit"
+    summary: "Reads the Kratos session to obtain a user id — empty when there is none"
     service:
       id: "ProxyService"
       version: "1.0.0"
     next_steps:
+      - id: "kratos_session"
+        label: "Resolve the session"
+
+  - id: "kratos_session"
+    title: "Kratos"
+    summary: "GET /sessions/whoami — 200 gives the identity id, 401 means anonymous"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_steps:
+      - id: "cache"
+        label: "Anonymous — cache is usable"
       - id: "link_service"
-        label: "Cache miss — resolve over gRPC"
+        label: "Authenticated — cache is bypassed"
+
+  - id: "cache"
+    title: "Redis cache"
+    summary: "Positive and negative entries, keyed by hash alone"
+    externalSystem:
+      name: "Redis"
+      summary: "Proxy cache — used only for requests without a user id"
+      url: "https://redis.io/"
+    next_steps:
       - id: "redirect"
-        label: "Cache hit"
+        label: "Hit"
+      - id: "link_service"
+        label: "Miss"
 
   - id: "link_service"
     title: "Link Service"
-    summary: "Get(hash) — the result, present or absent, is written back to the cache"
+    summary: "Get(hash, userID). Public link returns immediately; private link resolves the caller's email first"
     service:
       id: "LinkService"
       version: "1.0.0"
-    next_step:
-      id: "redirect"
-      label: "Original URL"
+    next_steps:
+      - id: "kratos_admin"
+        label: "Private link — resolve the email"
+      - id: "redirect"
+        label: "Public link"
+
+  - id: "kratos_admin"
+    title: "Kratos Admin API"
+    summary: "GET /admin/identities/{user_id} — traits.email is checked against the allowlist"
+    externalSystem:
+      name: "Kratos Admin API"
+      summary: "Any failure here becomes ErrPermissionDenied, indistinguishable from 'not allowed'"
+      url: "https://www.ory.sh/docs/kratos/reference/api"
+    next_steps:
+      - id: "redirect"
+        label: "Email on the allowlist"
+      - id: "not_found"
+        label: "Anything else"
+
+  - id: "not_found"
+    title: "404 Not Found"
+    summary: "ErrPermissionDenied is rendered as 404, so the link's existence stays hidden"
+    actor:
+      name: "Visitor"
 
   - id: "redirect"
     title: "Visitor is redirected"

@@ -1,0 +1,31 @@
+---
+id: adr-platform-0032-python-code-style
+name: "ADR-0032 (platform): Python code style"
+version: 1.0.0
+summary: Ruff replaces Flake8 as the Python code style tool.
+status: accepted
+date: 2024-03-03
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Tooling
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0032](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0032-python-code-style-selection.md)
+
+## Context
+
+The Python code style tool needed standardising, weighing efficiency and developer experience.
+
+## Decision
+
+Adopt [Ruff](https://docs.astral.sh/ruff/) over Flake8, on the strength of its speed.
+
+## Consequences
+
+A faster review loop. The shortest ADR in the set, and a good example of the format's value at small scale — the
+choice takes one line, but the record of *why* Flake8 was displaced is what stops the question being reopened.

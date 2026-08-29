@@ -1,0 +1,34 @@
+---
+id: adr-platform-0009-naming-spans-and-attributes
+name: "ADR-0009 (platform): Naming spans and attributes"
+version: 1.0.0
+summary: Tracing spans and attributes follow the Uptrace OpenTelemetry naming conventions.
+status: accepted
+date: 2022-12-21
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Observability
+    backgroundColor: green
+    textColor: green
+---
+
+> Source: [docs/ADR/decisions/0009](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0009-naming-spans-and-attributes.md)
+
+## Context
+
+Tracing and logging only allow events to be compared across services if spans and attributes are named the same way
+everywhere.
+
+## Decision
+
+Adopt the conventions in [Naming Spans and Attributes](https://uptrace.dev/opentelemetry/span-naming.html) rather
+than defining a house standard.
+
+## Consequences
+
+A short ADR with a large reach: it is what makes a trace readable when it crosses from the TypeScript proxy into the
+Go link service. The proxy's own `traceparent` propagation on published events depends on both ends agreeing on
+naming, not just on protocol.

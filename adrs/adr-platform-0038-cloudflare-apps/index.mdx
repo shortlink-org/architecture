@@ -1,0 +1,38 @@
+---
+id: adr-platform-0038-cloudflare-apps
+name: "ADR-0038 (platform): Move analytics to Cloudflare Apps"
+version: 1.0.0
+summary: Google Analytics is injected through Cloudflare Apps instead of being embedded in the codebase.
+status: accepted
+date: 2023-06-18
+owners:
+  - platform
+decisionMakers:
+  - platform
+related:
+  - id: adr-platform-0035-use-cloudflare
+badges:
+  - content: Infrastructure
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0038](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0038-transition-to-cloudflare-apps.md)
+
+## Context
+
+The Google Analytics snippet lived in the codebase, which meant slower page loads, a developer involved in every
+tracking change, and no way to adjust tracking quickly.
+
+## Decision
+
+Integrate Google Analytics through Cloudflare Apps, detaching the script from the codebase and managing the setup in
+Cloudflare's interface — with room for further integrations on the same platform.
+
+## Consequences
+
+**Gained** — tracking changes without a deploy, potentially faster page loads, developers freed from maintaining
+analytics code.
+
+**Cost** — a careful transition to avoid losing data, a new dependency on Cloudflare for analytics availability, and
+a privacy review of how the data is handled.

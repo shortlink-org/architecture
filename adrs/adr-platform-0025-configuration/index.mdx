@@ -1,0 +1,38 @@
+---
+id: adr-platform-0025-configuration
+name: "ADR-0025 (platform): Application configuration"
+version: 1.0.0
+summary: Configuration that varies between deployments lives in the environment, following the 12-Factor App methodology.
+status: accepted
+date: 2023-05-25
+owners:
+  - platform
+decisionMakers:
+  - platform
+badges:
+  - content: Process
+    backgroundColor: gray
+    textColor: gray
+---
+
+> Source: [docs/ADR/decisions/0025](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0025-configuration.md)
+
+## Context
+
+The platform configures applications through environment variables. The practice is standard, but maintainability
+and ease of use could be better.
+
+## Decision
+
+Follow the [12-Factor App](https://12factor.net/config) configuration principle: anything that varies between
+deployments belongs in the environment, not in the codebase. `shortctl` is used to manage and document
+configuration changes.
+
+## Consequences
+
+Every service in this catalog is shaped by this: `STORE_TYPE` selects the link service's database at runtime,
+`MQ_TYPE` selects Kafka or RabbitMQ, and `LINK_SERVICE_GRPC_URL` points the proxy at its upstream. None of those are
+compile-time choices.
+
+The ADR names the risks it creates — credentials in environment variables need securing (which
+[[adr|adr-platform-0013-security]] answers with SOPS), and configuration changes need review like any other change.

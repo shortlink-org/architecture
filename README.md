@@ -22,9 +22,11 @@ maintained by hand as prose.
 
 ```sh
 npm install
-npm run dev      # http://localhost:3000
-npm run lint     # catalog linter — runs in CI
-npm run build    # static site into dist/
+npm run dev            # http://localhost:3000
+npm run lint           # catalog linter — runs in CI
+npm run build          # static site into dist/
+npm run check:schemas  # compare copied schemas with upstream — runs in CI
+npm run sync:schemas   # rewrite them from upstream
 ```
 
 > [!NOTE]
@@ -38,6 +40,7 @@ npm run build    # static site into dist/
 ## Layout
 
 ```
+adrs/                       platform-wide decision records
 domains/<Domain>/
   index.mdx                 domain definition
   ubiquitous-language.mdx   DDD glossary for the bounded context
@@ -51,6 +54,28 @@ domains/<Domain>/
 systems/                    external / third-party systems
 teams/                      ownership
 ```
+
+## Decision records
+
+`adrs/` at the catalog root holds the platform-wide decisions from the monorepo's `docs/ADR/decisions` — the ones
+that constrain every boundary rather than any single one. Boundary-specific ADRs live next to the resource they
+apply to, under `domains/<Domain>/adrs/` or inside a system.
+
+ADR ids are prefixed by source (`adr-platform-*`, `adr-auth-*`, `adr-link-*`, `adr-proxy-*`) because the upstream
+repositories number their ADRs independently and would otherwise collide.
+
+## Schemas
+
+The `.proto` and OpenAPI files under `domains/` are copies of files that live in the source
+repositories. `scripts/sync-schemas.mjs` owns that relationship: it fetches each upstream file, applies the
+derivation the catalog needs (extract a single protobuf message, bundle a multi-file OpenAPI document, or copy
+verbatim), and either writes the result or fails on a difference.
+
+`.github/workflows/schemas.yml` runs the check daily rather than on every pull request — upstream moving is a reason
+to know, not a reason to fail an unrelated PR. When it fails, run `npm run sync:schemas`, read the diff, update the
+prose that described the old contract, and commit.
+
+Add a new schema by adding an entry to `FILES` in the script; do not copy files in by hand.
 
 ## Deployment
 
