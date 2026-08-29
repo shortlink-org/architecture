@@ -1,0 +1,18 @@
+---
+id: gitlab-oidc
+name: GitLab
+version: 1.0.0
+summary: External OIDC provider used for social sign-in.
+scope: external
+owners:
+  - auth-platform
+styles:
+  icon: https://cdn.simpleicons.org/gitlab
+---
+
+## Overview
+
+GitLab is configured as an OIDC provider in Kratos with the `read_user openid profile email` scopes. Claims are
+mapped onto identity traits through `oidc.gitlab.jsonnet`, which also carries the `github_username` mapping.
+
+<ContextDiagram />

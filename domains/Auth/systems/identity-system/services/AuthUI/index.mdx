@@ -1,0 +1,67 @@
+---
+id: AuthUI
+name: Auth UI
+version: 1.0.0
+summary: |
+  Next.js application that renders the Ory Kratos self-service flows — login, registration, recovery and
+  verification.
+owners:
+  - auth-platform
+badges:
+  - content: Next.js
+    backgroundColor: gray
+    textColor: gray
+  - content: TypeScript
+    backgroundColor: blue
+    textColor: blue
+repository:
+  language: TypeScript
+  url: 'https://github.com/shortlink-org/auth/tree/main/boundaries/ui'
+---
+
+## Overview
+
+The Auth UI is a **renderer, not an implementation**. It holds no credentials logic, no validation rules and no
+session handling of its own — it asks [[service|Kratos]] for the current flow and renders the nodes it gets back.
+
+Adding a login method (a new OIDC provider, WebAuthn, …) is therefore a Kratos configuration change; this
+application does not need to know about it.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Pages
+
+| Route | Flow |
+|-------|------|
+| `/login` | login |
+| `/registration` | registration |
+| `/forgot` | recovery |
+| `/verification` | verification |
+
+## How it talks to Kratos
+
+```ts
+// src/pkg/sdk/index.ts
+const NEXT_PUBLIC_API_URI = `${process.env.NEXT_PUBLIC_API_URI || ''}/api/auth`
+
+const ory = new FrontendApi(
+  new Configuration({
+    basePath: NEXT_PUBLIC_API_URI,
+    baseOptions: { withCredentials: true },
+  }),
+)
+```
+
+`withCredentials` is required — the whole flow depends on the `ory_kratos_session` cookie travelling with each
+request. The base path resolves to `/api/auth`, which the Oathkeeper `kratos:public` access rule passes through to
+Kratos untouched (`noop` authenticator and mutator).
+
+The generic `Flow` / `Node*` component tree (`NodeInput`, `NodeInputSubmit`, `NodeInputCheckbox`, `NodeAnchor`,
+`NodeScript`, …) maps Kratos UI node types onto MUI components.
+
+## Deployment
+
+Served at `https://shortlink.best/auth` on port `8080` behind nginx, image
+`registry.gitlab.com/shortlink-org/auth/ui`.

@@ -1,0 +1,84 @@
+---
+id: AuthService
+name: Auth Service
+version: 0.1.0
+summary: |
+  Go service that owns the SpiceDB permission schema and applies it on startup.
+owners:
+  - auth-platform
+writesTo:
+  - id: spicedb
+readsFrom:
+  - id: spicedb
+entities:
+  - id: Team
+badges:
+  - content: Go
+    backgroundColor: blue
+    textColor: blue
+  - content: Under development
+    backgroundColor: orange
+    textColor: orange
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/auth/tree/main/boundaries/auth'
+---
+
+## Overview
+
+> [!WARNING]
+> The upstream README marks this service as under development. What is implemented today is schema ownership —
+> the permission *checks* described in [[adr|adr-0001-zero-trust-authentication-flow]] are made by consuming
+> services against [[container|spicedb]] directly.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## What it actually does
+
+On startup the permission service walks its embedded `permissions/` directory, unmarshals every `.yaml` file into
+a `WriteSchemaRequest` and applies it to SpiceDB:
+
+```go
+//go:embed permissions/*
+var permissions embed.FS
+
+func New(ctx context.Context, log logger.Logger, permissionClient *authzed.Client) (*Service, error) {
+	svc := &Service{permission: permissionClient}
+
+	if err := svc.Migrations(ctx, permissions); err != nil {
+		return nil, err
+	}
+
+	log.Info("Permission migrations completed")
+	// ...
+}
+```
+
+The schema file (`internal/services/permission/permissions/auth.zed.yaml`) carries its own assertions and
+validation blocks, so the authorization model is testable in isolation — see
+[[system|permission-system]] for the schema itself.
+
+## Use cases
+
+From the service README:
+
+| Group | Use case |
+|-------|----------|
+| Auth | UC-1 Authenticate · UC-2 Log out · UC-3 Register · UC-4 Account recovery |
+| Permission | UC-1 Check Permission · UC-2 CRUD Permission |
+
+The Auth group is satisfied by [[service|Kratos]] rather than by this service.
+
+## Runtime
+
+| | |
+|---|---|
+| Image | `registry.gitlab.com/shortlink-org/auth/auth` |
+| Service port | `7070` |
+| Health / readiness | `:9090` `/live`, `/ready` |
+| SpiceDB client | `GRPC_CLIENT_HOST=shortlink.spicedb-operator`, mTLS via `/etc/grpc/ca/ca.crt` |
+| Shutdown | SIGTERM → graceful, exit code `143` |
+
+Wired with `google/wire`; observability (tracing, metrics, pprof, flight trace) comes from `shortlink-org/go-sdk`.

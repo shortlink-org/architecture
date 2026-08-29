@@ -1,0 +1,56 @@
+---
+id: adr-0002-permissions-with-spicedb
+name: "ADR-0002: Implement permissions with SpiceDB"
+version: 1.0.0
+summary: SpiceDB replaces Ory Keto as the permission engine, using Zanzibar-style relationship tuples instead of ABAC policies.
+status: accepted
+date: 2023-05-20
+owners:
+  - auth-platform
+decisionMakers:
+  - auth-platform
+appliesTo:
+  - type: domain
+    id: Auth
+  - type: system
+    id: permission-system
+  - type: service
+    id: AuthService
+  - type: container
+    id: spicedb
+badges:
+  - content: Authorization
+    backgroundColor: yellow
+    textColor: yellow
+---
+
+> Source: [boundaries/auth/docs/ADR/decisions/0002](https://github.com/shortlink-org/auth/blob/main/boundaries/auth/docs/ADR/decisions/0002-permissions.md)
+
+## Context
+
+Permissions needed to be fine-grained, manageable and able to grow with the product. Two open-source options were
+evaluated:
+
+- **Ory Keto** — attribute-based access control (ABAC). Flexible policy expressions, but limitations appeared in
+  scalability and in day-to-day manageability as the application grew.
+- **SpiceDB** — a [Google Zanzibar](https://research.google/pubs/pub48190/)-inspired database for application
+  permissions, built for high scale, expressing access as relationships.
+
+## Decision
+
+Use SpiceDB. Model permissions over a `user` namespace and a `link` namespace, with `view`, `edit` and `share`
+capabilities derived from relations rather than stored as roles.
+
+## Consequences
+
+- Permissions are managed centrally instead of per-service
+- Relationships are cheap to add and remove, so sharing is a tuple write
+- The model scales with the product rather than with policy complexity
+- The team takes on a Zanzibar-shaped mental model — permission is *computed*, and a check may be served from a
+  snapshot unless a ZedToken pins consistency
+
+Proof-of-concept schemas for both options are kept in the repository under
+`docs/ADR/decisions/proof/ADR-0002/permissions/` (`permissions-v1.ts` for Keto, `permissions-v1.zed` for SpiceDB).
+
+Ory Keto is still present in the local `docker compose` stack (namespace `shortlink`, ports `4466`/`4467`), which
+predates this decision.

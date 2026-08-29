@@ -1,0 +1,44 @@
+---
+id: spicedb
+name: SpiceDB
+version: 1.0.0
+container_type: database
+technology: spicedb
+authoritative: true
+access_mode: readWrite
+classification: confidential
+owners:
+  - auth-platform
+summary: Zanzibar-style permission store holding the relation tuples every authorization decision is derived from.
+---
+
+<NodeGraph />
+
+## What is this?
+
+SpiceDB is the authoritative store for **relationships**, not for permissions. Nothing in it says "Tom is an
+editor" — it says `link:firstlink#writer@user:tom`, and `edit` is computed from that at query time.
+
+Run by the SpiceDB operator; services reach it over gRPC with mTLS (`GRPC_CLIENT_HOST=shortlink.spicedb-operator`).
+
+### What does it store?
+
+- **Schema** — the `user` / `anonymoususer` / `team` / `link` definitions, written by [[service|AuthService]]
+- **Relation tuples** — `resource#relation@subject`, one row per relationship
+
+### Who writes to it?
+
+- [[service|AuthService]] writes the schema on startup
+- Services in the Link boundary write tuples as links and teams are created and shared
+
+### Who reads from it?
+
+Every service that gates an action on permission — the BFF and the link service call `CheckPermission` before
+serving or mutating a link.
+
+### Notes
+
+- Consistency is Zanzibar-style: reads can be served from a snapshot, so a freshly written tuple is not guaranteed
+  to be visible to the very next check unless a ZedToken is passed.
+- The `anonymoususer:*` wildcard means "public" is a tuple like any other — revoking public access is a delete,
+  not a flag flip.

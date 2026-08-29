@@ -1,0 +1,24 @@
+---
+id: auth-platform
+name: Auth Platform
+summary: Owns authentication, session management and permissions across shortlink — the Ory stack, the Auth UI and the SpiceDB permission model.
+email: batazor111@gmail.com
+---
+
+## Overview
+
+The Auth Platform team owns the [[domain|Auth]] boundary: everything that answers "who is this request from?" and "is this request allowed?".
+
+## Responsibilities
+
+- **Identity** — Ory Kratos deployment, identity schema, self-service flows (login, registration, recovery, verification, settings)
+- **Edge authentication** — Ory Oathkeeper access rules, JWT minting for internal services
+- **Permissions** — the SpiceDB schema and the auth service that migrates it
+- **Auth UI** — the Next.js application rendering Kratos self-service flows
+
+## Repositories
+
+| Repository | Contents |
+|------------|----------|
+| [shortlink-org/auth](https://github.com/shortlink-org/auth) | Auth service, Auth UI, Helm charts for Kratos and Oathkeeper |
+| [shortlink-org/shortlink](https://github.com/shortlink-org/shortlink) | Istio `RequestAuthentication` / `AuthorizationPolicy` on consuming services |

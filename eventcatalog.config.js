@@ -5,16 +5,16 @@ export default {
     'This internal platform provides a comprehensive view of our event-driven architecture across all systems. Use this portal to discover existing domains, explore services and their dependencies, and understand the message contracts that connect our infrastructure',
   organizationName: 'shortlink-org',
   theme: 'sunset',
-  homepageLink: 'https://eventcatalog.dev/',
-  editUrl: 'https://github.com/boyney123/eventcatalog-demo/edit/master',
+  homepageLink: 'https://github.com/shortlink-org',
+  editUrl: 'https://github.com/shortlink-org/architecture/edit/main',
   // Supports static or server. Static renders a static site, server renders a server side rendered site
   // large catalogs may benefit from server side rendering
   output: 'static',
   // By default set to false, add true to get urls ending in /
   trailingSlash: false,
-  // Change to make the base url of the site different, by default https://{website}.com/docs,
-  // changing to /company would be https://{website}.com/company/docs,
-  base: '/',
+  // Deployed to GitHub Pages at https://shortlink-org.github.io/architecture
+  // If a custom domain is ever attached (CNAME), set this back to '/'.
+  base: '/architecture',
   // Resource search is the default lightweight search. Change this to { type: 'indexed' }
   // to enable full-content search. Indexed search requires running a build to generate the index.
   search: {

@@ -1,0 +1,77 @@
+---
+id: AuthenticatedRequest
+name: "Authenticated request through the edge"
+version: "1.0.0"
+summary: "A browser request carrying a Kratos session cookie is authenticated at the edge, given a JWT, and authorized against SpiceDB."
+owners:
+  - auth-platform
+steps:
+  - id: "browser_request"
+    title: "Browser sends request"
+    summary: "GET /api/links/123 with Cookie: ory_kratos_session"
+    actor:
+      name: "Visitor"
+    next_step:
+      id: "istio_gateway"
+      label: "HTTPS + session cookie"
+
+  - id: "istio_gateway"
+    title: "Istio Gateway"
+    externalSystem:
+      name: "Istio Gateway"
+      summary: "Ingress load balancer and TLS termination"
+      url: "https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-control/"
+    next_step:
+      id: "oathkeeper"
+      label: "Forward to the access proxy"
+
+  - id: "oathkeeper"
+    title: "Oathkeeper"
+    summary: "cookie_session authenticator, then id_token mutator"
+    service:
+      id: "Oathkeeper"
+      version: "1.0.0"
+    next_steps:
+      - id: "kratos_whoami"
+        label: "Validate the session"
+      - id: "login_redirect"
+        label: "No valid session — 302"
+
+  - id: "kratos_whoami"
+    title: "Kratos"
+    summary: "GET /sessions/whoami returns the identity"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_step:
+      id: "upstream_service"
+      label: "Mint JWT and forward"
+
+  - id: "login_redirect"
+    title: "Redirect to login"
+    summary: "302 to https://shortlink.best/auth/login for HTML requests, JSON error otherwise"
+    service:
+      id: "AuthUI"
+      version: "1.0.0"
+
+  - id: "upstream_service"
+    title: "BFF / API service"
+    summary: "Istio RequestAuthentication verifies the JWT against the Oathkeeper JWKS"
+    externalSystem:
+      name: "BFF"
+      summary: "Backend for Frontend in the Link boundary — receives Authorization: Bearer <JWT>"
+      url: "https://github.com/shortlink-org/shortlink/tree/main/boundaries/bff"
+    next_step:
+      id: "check_permission"
+      label: "CheckPermission before acting"
+
+  - id: "check_permission"
+    title: "SpiceDB"
+    summary: "CheckPermission(user: sub, permission: view, object: link:123) — ALLOWED or DENIED"
+    externalSystem:
+      name: "SpiceDB"
+      summary: "Permission store — decides whether the caller may view the link"
+      url: "https://authzed.com/docs"
+---
+
+<NodeGraph />

@@ -1,0 +1,86 @@
+---
+id: adr-0001-zero-trust-authentication-flow
+name: "ADR-0001: Zero Trust authentication flow — Browser → Istio → Oathkeeper → BFF"
+version: 1.0.0
+summary: Session validation moves out of every BFF into Oathkeeper at the edge, which mints a short-lived JWT for internal services.
+status: proposed
+date: 2026-01-26
+owners:
+  - auth-platform
+decisionMakers:
+  - auth-platform
+appliesTo:
+  - type: domain
+    id: Auth
+  - type: system
+    id: access-proxy-system
+  - type: system
+    id: identity-system
+  - type: service
+    id: Oathkeeper
+  - type: service
+    id: Kratos
+  - type: entity
+    id: AccessToken
+badges:
+  - content: Zero Trust
+    backgroundColor: purple
+    textColor: purple
+---
+
+> Source: [docs/ADR/decisions/0001](https://github.com/shortlink-org/auth/blob/main/docs/ADR/decisions/0001-zero-trust-authentication-flow-browser-istio-oathkeeper-bff.md) — status **Proposed**.
+
+## Context
+
+Each BFF validated the session itself, calling Kratos `/sessions/whoami` on every incoming request. That produced
+four problems:
+
+1. **An extra synchronous hop per request** from BFF to Kratos
+2. **Duplicated validation middleware** in every BFF
+3. **Cookie-based sessions inside the cluster**, which do not fit service-to-service calls
+4. **BFF coupled to Kratos** — authentication logic mixed into business logic
+
+## Decision
+
+```
+Browser → Istio Gateway → Oathkeeper (cookie_session → Kratos whoami)
+        → Oathkeeper (id_token mutator) → BFF (Authorization: Bearer <JWT>)
+```
+
+Oathkeeper validates the `ory_kratos_session` cookie once, at the edge, and forwards a signed JWT (TTL ~15 minutes)
+carrying `sub`, `email`, `name`, `identity_id` and `session_id`. Services verify the token against Oathkeeper's
+JWKS; they no longer call Kratos.
+
+Unauthenticated HTML requests get a `302` to `/auth/login`; everything else gets a JSON error.
+
+## Consequences
+
+**Gained**
+
+- BFFs become stateless with respect to authentication — no network call to identify the caller
+- One place validates sessions for every BFF; adding a service behind the proxy requires no auth code
+- Authentication is decoupled from business logic
+- Every request is validated at the gateway, not trusted because it is inside the mesh
+
+**Cost**
+
+- The whoami latency (~10–50ms) moved, it did not disappear
+- Oathkeeper is a new component to deploy, monitor and keep highly available — and a single point of failure for
+  every authenticated surface
+- Migrating requires every BFF to accept `Authorization: Bearer` instead of cookies
+
+## Migration plan
+
+1. Deploy Oathkeeper alongside the Istio Gateway
+2. Configure the `cookie_session` authenticator and `id_token` mutator
+3. Teach each BFF to read the `Authorization: Bearer` header
+4. Shift traffic through Oathkeeper gradually (canary / feature flag)
+5. Remove the direct-whoami middleware from the BFFs
+
+## Alternatives
+
+| Alternative | Rejected because |
+|-------------|------------------|
+| Envoy `ext_authz` | Less flexibility in token mutation |
+| Kong + plugin | Vendor lock-in, harder to integrate with Kratos |
+| Custom middleware | The duplication this ADR set out to remove |

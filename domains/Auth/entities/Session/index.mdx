@@ -1,0 +1,64 @@
+---
+id: Session
+name: Session
+version: 1.0.0
+identifier: id
+summary: Browser-side proof of authentication, carried in the ory_kratos_session cookie.
+owners:
+  - auth-platform
+properties:
+  - name: id
+    type: UUID
+    required: true
+    description: Session id. Becomes the `session_id` claim of the issued token.
+  - name: identity
+    type: Identity
+    required: true
+    description: The authenticated identity
+    references: Identity
+    referencesIdentifier: id
+    relationType: hasOne
+  - name: aal
+    type: string
+    required: true
+    description: Authenticator assurance level reached by this session
+    enum: ['aal1', 'aal2']
+  - name: expires_at
+    type: timestamp
+    required: true
+    description: Creation time plus the 720h lifespan
+  - name: active
+    type: boolean
+    required: true
+    description: Whether the session is still valid
+---
+
+## Overview
+
+A Session is created by [[service|Kratos]] on successful login or registration and returned as the
+`ory_kratos_session` cookie.
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Cookie
+
+| Attribute | Value |
+|-----------|-------|
+| Name | `ory_kratos_session` |
+| Domain | `shortlink.best` |
+| SameSite | `Lax` |
+| Lifespan | `720h` (30 days) |
+
+## Scope
+
+The cookie never enters the cluster. [[service|Oathkeeper]] is the last component that sees it; everything behind
+the proxy works from an [[entity|AccessToken]] instead. This is why the session lifespan (30 days) and the token
+TTL (15 minutes) are so far apart — they protect different things.
+
+## AAL
+
+`aal2` is reached with TOTP or a lookup secret. The settings flow requires `highest_available`, so a user who has
+configured 2FA must re-satisfy it before changing their profile or password. The login flow additionally has a
+`10m` lifespan — the flow itself expires, independently of the session it creates.

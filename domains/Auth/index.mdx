@@ -1,0 +1,100 @@
+---
+id: Auth
+name: Auth
+version: 1.0.0
+summary: |
+  The Auth boundary answers two questions for every request in shortlink: who is the caller (authentication) and what
+  are they allowed to do (authorization). It owns identity storage, session and self-service flows, edge JWT minting
+  and the relationship-based permission model.
+owners:
+  - auth-platform
+systems:
+  - id: identity-system
+  - id: access-proxy-system
+  - id: permission-system
+entities:
+  - id: Identity
+  - id: Session
+  - id: AccessToken
+  - id: Team
+flows:
+  - id: AuthenticatedRequest
+  - id: UserRegistration
+badges:
+  - content: Supporting domain
+    backgroundColor: blue
+    textColor: blue
+    icon: ShieldCheckIcon
+  - content: Zero Trust
+    backgroundColor: purple
+    textColor: purple
+    icon: LockClosedIcon
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/auth'
+---
+
+## Domain Overview
+
+Auth is a **supporting domain**. It carries no shortlink business logic of its own — instead every other boundary
+(Link, Metadata, BFF, Proxy) depends on it to establish caller identity and to check permissions before acting.
+
+The boundary is built almost entirely on the [Ory](https://www.ory.sh/) stack plus
+[SpiceDB](https://authzed.com/docs) (a Google Zanzibar implementation), with a thin Go service of our own that owns
+the permission schema.
+
+<NodeGraph mode="full" search="false" legend="false" />
+
+## Systems
+
+- [[system|identity-system]] — stores identities and sessions, renders the self-service flows (login, registration, recovery, verification, 2FA)
+- [[system|access-proxy-system]] — validates the session cookie at the edge and mints a short-lived JWT for internal services
+- [[system|permission-system]] — owns the relationship-based permission schema and answers `CheckPermission`
+
+## Authentication vs Authorization
+
+The two halves of this domain are deliberately separated and use different technology:
+
+- **Authentication** — Ory Kratos owns identities and sessions. A browser holds an `ory_kratos_session` cookie.
+  Cookies never travel inside the cluster; Oathkeeper exchanges them for a JWT.
+- **Authorization** — SpiceDB stores relation tuples (`link:firstlink#writer@user:tom`) and evaluates permissions
+  from them. There are no roles in a table; permission is derived from relationships.
+
+## The Zero Trust request path
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant I as Istio Gateway
+    participant O as Oathkeeper
+    participant K as Kratos
+    participant S as BFF / API service
+    participant P as SpiceDB
+
+    B->>I: GET /api/links/123<br/>Cookie: ory_kratos_session
+    I->>O: forward
+    O->>K: GET /sessions/whoami
+    K-->>O: identity { id, traits }
+    Note over O: id_token mutator<br/>mints JWT (TTL 15m)
+    O->>S: Authorization: Bearer <JWT>
+    Note over S: Istio RequestAuthentication<br/>verifies against JWKS
+    S->>P: CheckPermission(user, view, link:123)
+    P-->>S: ALLOWED / DENIED
+    S-->>B: 200 / 403
+```
+
+Every consuming service enforces this independently through Istio: a `RequestAuthentication` verifies the JWT against
+Oathkeeper's JWKS endpoint (`http://oathkeeper-api.auth.svc.cluster.local:4456/.well-known/jwks.json`, issuer
+`https://shortlink.best`) and an `AuthorizationPolicy` rejects anything without a valid request principal — except
+`/live`, `/ready`, `/healthz` and `/metrics`.
+
+## Key decisions
+
+- [[adr|adr-0001-zero-trust-authentication-flow]] — move session validation out of BFF into Oathkeeper at the edge
+- [[adr|adr-0002-permissions-with-spicedb]] — use SpiceDB instead of Ory Keto for permissions
+- [[adr|adr-0003-access-control-schema]] — the `user` / `anonymoususer` / `team` / `link` schema
+
+## Business flows
+
+- [[flow|AuthenticatedRequest]] — browser request travelling through the edge to a protected API
+- [[flow|UserRegistration]] — new account created through the Kratos self-service registration flow

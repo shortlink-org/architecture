@@ -1,0 +1,67 @@
+---
+id: UserRegistration
+name: "User registration"
+version: "1.0.0"
+summary: "A visitor creates an account through the Kratos self-service registration flow and is signed in immediately, with email verification pending."
+owners:
+  - auth-platform
+steps:
+  - id: "visitor_starts"
+    title: "Visitor opens /auth/registration"
+    actor:
+      name: "Visitor"
+    next_step:
+      id: "auth_ui"
+      label: "Load the registration form"
+
+  - id: "auth_ui"
+    title: "Auth UI"
+    summary: "Fetches the flow from Kratos and renders the returned nodes"
+    service:
+      id: "AuthUI"
+      version: "1.0.0"
+    next_step:
+      id: "kratos_registration"
+      label: "Submit credentials or choose a provider"
+
+  - id: "kratos_registration"
+    title: "Kratos"
+    summary: "Runs the registration flow — 10m lifespan"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_steps:
+      - id: "oidc_provider"
+        label: "OIDC — GitHub or GitLab"
+      - id: "session_hook"
+        label: "Password — create identity"
+
+  - id: "oidc_provider"
+    title: "OIDC provider"
+    externalSystem:
+      name: "GitHub / GitLab"
+      summary: "Claims are mapped onto identity traits by a jsonnet mapper"
+      url: "https://www.ory.sh/docs/kratos/social-signin/overview"
+    next_step:
+      id: "session_hook"
+      label: "Return with claims"
+
+  - id: "session_hook"
+    title: "session hook"
+    summary: "Identity persisted, session issued, ory_kratos_session cookie set"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_step:
+      id: "verification"
+      label: "Password path also runs show_verification_ui"
+
+  - id: "verification"
+    title: "Email verification"
+    summary: "Verification code sent to the identity's email — the account is already usable while this is pending"
+    service:
+      id: "AuthUI"
+      version: "1.0.0"
+---
+
+<NodeGraph />

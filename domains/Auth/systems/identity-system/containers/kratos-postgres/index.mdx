@@ -1,0 +1,42 @@
+---
+id: kratos-postgres
+name: Kratos Postgres
+version: 1.0.0
+container_type: database
+technology: postgres@18
+authoritative: true
+access_mode: readWrite
+classification: confidential
+owners:
+  - auth-platform
+summary: Authoritative store for identities, credentials, sessions and in-flight self-service flows.
+---
+
+<NodeGraph />
+
+## What is this?
+
+The system of record for identity data in shortlink. Provisioned by the
+[Crunchy Postgres Operator](https://access.crunchydata.com/documentation/postgres-operator/latest/) from
+`ops/Helm/kratos/templates/postgres-operator.yaml` — PostgreSQL 18, single instance, 1Gi data and 1Gi WAL on
+`local-path`, with TLS certificates issued per-cluster (server, replication and issuer manifests live under
+`templates/postgres-tls/`).
+
+### What does it store?
+
+- **Identities** — id and traits, validated against the identity schema
+- **Credentials** — Argon2id password hashes, TOTP secrets, lookup secrets, OIDC provider links
+- **Sessions** — active browser sessions and their AAL
+- **Flow state** — in-flight login, registration, recovery and verification flows
+- **Courier queue** — outbound verification and recovery messages
+
+### Who writes to it?
+
+Only [[service|Kratos]]. The DSN is injected from the `shortlink-postgres-pguser-kratos` secret; no other service
+in the catalog holds credentials for this database.
+
+### Notes
+
+- Locally this is SQLite (or `dsn: memory`) rather than Postgres — treat the local setup as disposable.
+- A read-only `grafana-user` is provisioned for dashboards.
+- This container holds personal data (email addresses, credential material) — classified `confidential`.

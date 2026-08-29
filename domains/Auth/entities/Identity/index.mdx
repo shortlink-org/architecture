@@ -1,0 +1,67 @@
+---
+id: Identity
+name: Identity
+version: 1.0.0
+identifier: id
+aggregateRoot: true
+summary: A person's account in Ory Kratos — an id plus traits validated against the identity schema.
+owners:
+  - auth-platform
+properties:
+  - name: id
+    type: UUID
+    required: true
+    description: Kratos identity id. Becomes the `sub` and `identity_id` claim of every issued token.
+  - name: traits.email
+    type: string
+    required: true
+    description: E-Mail. The password identifier, the TOTP account name, and the channel used for verification and recovery.
+  - name: traits.name.first
+    type: string
+    required: false
+    description: First name
+  - name: traits.name.last
+    type: string
+    required: false
+    description: Last name
+  - name: metadata_public
+    type: object
+    required: false
+    description: Public metadata, copied verbatim into the `metadata` claim by the Oathkeeper id_token mutator.
+---
+
+## Overview
+
+An Identity is what Kratos stores. It is **not** the SpiceDB `user` — the identity holds credentials and profile
+data, the SpiceDB subject holds relationships. They are linked only by the identity's UUID travelling in the `sub`
+claim.
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Schema constraints
+
+`identity.schema.json` sets `additionalProperties: false` on traits, so nothing outside the fields above can be
+stored on an identity. Adding a profile field is a schema change plus a Kratos migration, not an application
+change.
+
+`email` is annotated with three separate Kratos behaviours:
+
+```json
+"ory.sh/kratos": {
+  "credentials": {
+    "password": { "identifier": true },
+    "totp": { "account_name": true }
+  },
+  "verification": { "via": "email" },
+  "recovery": { "via": "email" }
+}
+```
+
+Changing a user's email therefore changes their login identifier, their TOTP label, and where recovery mail goes.
+
+## Credentials
+
+Stored against the identity in [[container|kratos-postgres]], never in traits: Argon2id password hashes, TOTP
+secrets (issuer `ShortLink`), lookup secrets, and OIDC links to [[system|github-oidc]] / [[system|gitlab-oidc]].

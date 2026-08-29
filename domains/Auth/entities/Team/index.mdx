@@ -1,0 +1,59 @@
+---
+id: Team
+name: Team
+version: 1.0.0
+identifier: id
+aggregateRoot: true
+summary: A SpiceDB subject grouping users, able to own links and grant its members access to them.
+owners:
+  - auth-platform
+properties:
+  - name: id
+    type: string
+    required: true
+    description: SpiceDB object id, used as `team:<id>`
+  - name: administrator
+    type: relation
+    required: false
+    description: Users who administer the team. Grants `view_all_links`.
+  - name: member
+    type: relation
+    required: false
+    description: Users who belong to the team. Usable as a subject set via `team#member`.
+  - name: view_all_links
+    type: permission
+    required: false
+    description: Computed as `administrator` — the ability to view every link the team owns.
+---
+
+## Overview
+
+Team exists only in [[container|spicedb]]; there is no team table in [[container|kratos-postgres]] and no team
+concept in the identity schema. It is a purely relational object.
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Definition
+
+```
+definition team {
+    relation administrator: user
+    relation member: user
+
+    permission view_all_links = administrator
+}
+```
+
+## How a team grants access
+
+Two mechanisms, and they behave differently:
+
+1. **As a subject set** — `link:x#reader@team:t#member` grants read to whoever is a member *at check time*. Adding
+   a member grants access to every link shared this way, with no per-link write.
+2. **Through ownership** — `link:x#linkteam@team:t` plus `permission view = ... + linkteam->view_all_links` lets
+   team administrators view the link. Members get nothing from this path; administrators get it on every link the
+   team owns.
+
+Neither path grants `edit`, which is `writer` and nothing else.

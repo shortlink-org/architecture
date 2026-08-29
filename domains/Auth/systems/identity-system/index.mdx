@@ -1,0 +1,71 @@
+---
+id: identity-system
+name: Identity System
+version: 1.0.0
+summary: |
+  Owns identities, credentials and browser sessions. Ory Kratos runs the self-service state machines; the Auth UI
+  renders them.
+scope: internal
+owners:
+  - auth-platform
+services:
+  - id: Kratos
+  - id: AuthUI
+containers:
+  - id: kratos-postgres
+entities:
+  - id: Identity
+  - id: Session
+relationships:
+  - id: github-oidc
+    label: delegates social sign-in to
+  - id: gitlab-oidc
+    label: delegates social sign-in to
+actors:
+  - id: visitor
+    name: Visitor
+    label: registers, logs in, recovers account
+    direction: inbound
+badges:
+  - content: Ory Kratos
+    backgroundColor: purple
+    textColor: purple
+---
+
+## Overview
+
+The Identity System is the system of record for **who exists**. It stores identities in
+[[container|kratos-postgres]], issues the `ory_kratos_session` cookie, and drives every self-service interaction —
+login, registration, recovery, verification and settings.
+
+[[service|Kratos]] owns the flow state machines. [[service|AuthUI]] holds no auth logic of its own: it fetches the
+flow from Kratos through `@ory/client` and renders whatever nodes come back.
+
+## Context Diagram
+
+<ContextDiagram />
+
+## Resource Diagram
+
+<NodeGraph />
+
+## Login methods
+
+| Method | Enabled | Notes |
+|--------|---------|-------|
+| password | yes | Argon2id hashing, email as identifier |
+| oidc | yes | GitHub (`user:email`) and GitLab (`read_user openid profile email`) |
+| totp | yes | Issuer `ShortLink` |
+| lookup_secret | yes | Recovery codes |
+| code | yes | Used by recovery and verification |
+| link | yes | |
+| profile | yes | Settings flow |
+
+## Endpoints
+
+| Surface | Address |
+|---------|---------|
+| Kratos public API (via edge) | `https://shortlink.best/api/auth` |
+| Kratos public (in cluster) | `http://kratos-public.auth.svc.cluster.local` |
+| Kratos admin | `:4434` — cluster-internal only |
+| Auth UI | `https://shortlink.best/auth` |

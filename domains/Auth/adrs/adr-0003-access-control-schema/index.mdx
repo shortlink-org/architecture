@@ -1,0 +1,71 @@
+---
+id: adr-0003-access-control-schema
+name: "ADR-0003: Access control schema definitions in SpiceDB"
+version: 1.0.0
+summary: Defines the user, anonymoususer, team and link definitions and the relations and permissions between them.
+status: accepted
+date: 2023-10-19
+owners:
+  - auth-platform
+decisionMakers:
+  - auth-platform
+appliesTo:
+  - type: domain
+    id: Auth
+  - type: system
+    id: permission-system
+  - type: container
+    id: spicedb
+  - type: entity
+    id: Team
+related:
+  - id: adr-0002-permissions-with-spicedb
+badges:
+  - content: Authorization
+    backgroundColor: yellow
+    textColor: yellow
+---
+
+> Source: [boundaries/auth/docs/ADR/decisions/0003](https://github.com/shortlink-org/auth/blob/main/boundaries/auth/docs/ADR/decisions/0003-access-control-schema.md)
+
+## Context
+
+Following [[adr|adr-0002-permissions-with-spicedb]], the concrete schema had to be pinned down: which object types
+exist, which relations connect them, and which permissions are derived.
+
+## Decision
+
+### Entities
+
+| Definition | Meaning |
+|------------|---------|
+| `user` | A registered account |
+| `anonymoususer` | An unauthenticated visitor |
+| `team` | A group that can have members and administrators, and can own links |
+| `link` | A link with access control |
+
+### Relations and permissions
+
+**team**
+
+- `administrator` — user is an admin of the team
+- `member` — user belongs to the team
+- `view_all_links = administrator` — only administrators, by default
+
+**link**
+
+- `linkteam` — the team that owns the link
+- `reader` — `user | team#member | anonymoususer:*`
+- `writer` — a user who may modify the link
+- `edit = writer`
+- `view = reader + writer + linkteam->view_all_links`
+
+## Consequences
+
+- "Public link" is expressed as the wildcard `anonymoususer:*` on `reader` — a tuple, not a flag
+- Team membership grants access through a subject set, so adding a member propagates without per-link writes
+- `edit` stays narrow: a team administrator can view every team link but cannot edit one unless explicitly a
+  `writer`. The schema's own assertions enforce this (`link:firstlink#edit@user:admin` must be false)
+- The schema ships with assertions and validation blocks, so the model is testable without a running service
+
+Playground for the model: https://play.authzed.com/s/uQrKpM5mUJ5o/expected

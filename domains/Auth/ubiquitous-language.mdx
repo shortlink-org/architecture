@@ -1,0 +1,160 @@
+---
+dictionary:
+  - id: Identity
+    name: Identity
+    summary: "A person's account as stored by Ory Kratos — an id plus traits validated against the identity schema."
+    description: |
+      An Identity is the record Kratos keeps for a person. It is **not** the same thing as the `user` object in
+      SpiceDB — the identity holds credentials and profile data, the SpiceDB `user` holds relationships.
+
+      Shape (from `identity.schema.json`):
+
+      - `id` — UUID, the subject of every issued token
+      - `traits.email` — the login identifier, also used as the TOTP account name, and the channel for
+        verification and recovery
+      - `traits.name.first` / `traits.name.last` — optional profile fields
+
+      `additionalProperties` is `false`: nothing outside the schema can be stored on an identity.
+    icon: UserCircle
+
+  - id: Session
+    name: Session
+    summary: "Browser-side proof of authentication, carried in the ory_kratos_session cookie for up to 30 days."
+    description: |
+      Created by Kratos after a successful login or registration and returned as the `ory_kratos_session` cookie
+      (domain `shortlink.best`, `SameSite=Lax`, lifespan `720h` / 30 days).
+
+      Sessions live only between the browser and the edge. Nothing inside the cluster ever sees the cookie — it is
+      exchanged for an [Access Token](#AccessToken) by Oathkeeper.
+    icon: Clock
+
+  - id: SelfServiceFlow
+    name: Self-Service Flow
+    summary: "A Kratos-driven, multi-step interaction such as login, registration, recovery or verification."
+    description: |
+      Kratos owns the state machine; the Auth UI only renders the nodes Kratos returns. Enabled flows:
+
+      | Flow | UI URL | Lifespan |
+      |------|--------|----------|
+      | login | `/auth/login` | 10m |
+      | registration | `/auth/registration` | 10m |
+      | recovery (code) | `/auth/recovery` | — |
+      | verification (code) | `/auth/verification` | — |
+      | settings | `/next/user/profile` | privileged window 15m |
+      | error | `/next/error` | — |
+
+      Because the UI is a renderer rather than an implementation, adding a login method is a Kratos config change,
+      not a UI change.
+    icon: GitBranch
+
+  - id: AAL
+    name: Authenticator Assurance Level
+    summary: "How strongly the current session is authenticated — password only (aal1) vs. a second factor (aal2)."
+    description: |
+      Second-factor methods enabled in shortlink: `totp` (issuer `ShortLink`) and `lookup_secret` (recovery codes).
+
+      The settings flow requires `required_aal: highest_available`, so a user with 2FA configured must satisfy the
+      second factor before changing their profile or password.
+    icon: ShieldCheck
+
+  - id: AccessRule
+    name: Access Rule
+    summary: "An Oathkeeper rule matching a URL pattern to an authenticator, authorizer, mutator and upstream."
+    description: |
+      Rules are glob-matched and defined in the Oathkeeper Helm values. Each rule names:
+
+      - **match** — URL glob and HTTP methods
+      - **authenticators** — how the caller is identified (`cookie_session`, `anonymous`, `noop`)
+      - **authorizer** — `allow` or `deny`
+      - **mutators** — what is handed to the upstream (`id_token`, `header`, `noop`)
+      - **upstream** — the in-cluster service to forward to
+      - **errors** — e.g. redirect an unauthenticated HTML request to `/auth/login`
+
+      Current rules cover the shop admin, the shop UI, the Temporal web UI, the link BFF, and a pass-through rule
+      exposing Kratos' public API at `/api/auth/**`.
+    icon: ListChecks
+
+  - id: Authenticator
+    name: Authenticator
+    summary: "The Oathkeeper component that establishes who the caller is before a request is forwarded."
+    description: |
+      `cookie_session` is the one that matters: it takes the `ory_kratos_session` cookie and calls Kratos
+      `/sessions/whoami`, taking the subject from `identity.id` and keeping the whole response as extra data for
+      the mutator.
+
+      `anonymous` (subject `guest`) and `noop` exist for public routes.
+    icon: KeyRound
+
+  - id: Mutator
+    name: Mutator
+    summary: "The Oathkeeper component that rewrites a request before it reaches the upstream service."
+    description: |
+      The `id_token` mutator signs a JWT from the identity data; the `header` mutator adds `X-User-ID` and
+      `X-Email`. Together they turn a cookie-bearing browser request into something an internal service can trust
+      without calling back to Kratos.
+    icon: Wand
+
+  - id: AccessToken
+    name: Access Token (ID Token)
+    summary: "The short-lived RS256 JWT Oathkeeper mints per request, issued by https://shortlink.best."
+    description: |
+      TTL is 15 minutes and the token is minted **per request** — it is not a token the browser stores or refreshes.
+      Downstream services verify it against Oathkeeper's JWKS endpoint and read `sub` and `email` from the claims,
+      which Istio also copies into the `x-user-id` and `x-user-email` headers.
+    icon: Ticket
+
+  - id: JWKS
+    name: JWKS
+    summary: "The RS256 key set Oathkeeper signs tokens with and that every consuming service verifies against."
+    description: |
+      Generated with `oathkeeper credentials generate --alg RS256`, stored SOPS-encrypted in the repo and served
+      from `http://oathkeeper-api.auth.svc.cluster.local:4456/.well-known/jwks.json`.
+
+      Every service chart points its Istio `RequestAuthentication` at this URL — rotating the key set is therefore
+      a single, boundary-wide operation.
+    icon: KeySquare
+
+  - id: RelationTuple
+    name: Relation Tuple
+    summary: "The SpiceDB unit of authorization: resource#relation@subject, e.g. link:firstlink#writer@user:tom."
+    description: |
+      Permissions in shortlink are not stored as roles or ACL rows — they are derived by walking tuples.
+
+      ```
+      link:specificlink#reader@user:specificuser
+      |_______________________| |____| |_______________|
+              resource         relation     subject
+      ```
+    icon: Link2
+
+  - id: Permission
+    name: Permission
+    summary: "A computed capability in the SpiceDB schema, derived from relations rather than stored directly."
+    description: |
+      Defined permissions:
+
+      - `link.edit = writer`
+      - `link.view = reader + writer + linkteam->view_all_links`
+      - `team.view_all_links = administrator`
+
+      Note the arrow: a team administrator can view every link the team owns without any tuple existing between
+      that administrator and the link.
+    icon: Lock
+
+  - id: AnonymousUser
+    name: Anonymous User
+    summary: "A SpiceDB subject type representing an unauthenticated visitor, used to make a link publicly readable."
+    description: |
+      The `reader` relation accepts `anonymoususer:*`, which is how a link becomes public: a wildcard tuple grants
+      read to every unauthenticated visitor without enumerating them.
+    icon: UserX
+
+  - id: ZeroTrust
+    name: Zero Trust
+    summary: "Every request is authenticated and authorized at the edge and again at the service, with no implicit trust."
+    description: |
+      In shortlink this means two independent checks: Oathkeeper validates the session and mints a JWT, and each
+      service's Istio `AuthorizationPolicy` independently rejects any request without a valid request principal.
+      Being inside the mesh grants nothing on its own.
+    icon: ShieldAlert
+---
