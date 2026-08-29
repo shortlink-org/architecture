@@ -1,0 +1,1201 @@
+# Catalog-owned metadata for architecture decision records.
+#
+# The decisions themselves live in the source repositories and are not edited here — every
+# adrs/**/index.mdx is generated from upstream by scripts/sync-adrs.mjs. This file holds the part
+# upstream cannot: where each decision belongs in the catalog, and how it ties to the resources
+# the catalog documents.
+#
+#   source    <owner/repo>:<path to the upstream .md>
+#   origin    'catalog' instead of a source, for a decision made in this repository
+#   location  the adrs/ directory the generated file goes into
+#
+# Everything else is standard EventCatalog ADR frontmatter.
+
+adr-platform-0001-record-architecture-decisions:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0001-record-architecture-decisions.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  badges:
+    - content: Process
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0002-canonical-event-naming:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0002-implement-as-event-naming.md
+  location: adrs
+  owners:
+    - link-platform
+  decisionMakers:
+    - link-platform
+  appliesTo:
+    - type: domain
+      id: Link
+    - type: channel
+      id: link.link.created.v1
+    - type: channel
+      id: link.link.updated.v1
+    - type: channel
+      id: link.link.deleted.v1
+    - type: channel
+      id: link.link.redirected.v1
+    - type: channel
+      id: metadata.metadata.extracted.v1
+  amendedBy:
+    - id: adr-platform-0041-process-for-adding-new-events
+  badges:
+    - content: Platform-wide
+      backgroundColor: red
+      textColor: red
+adr-platform-0003-observability-health-check:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0003-observability-health-check.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: LinkService
+    - type: service
+      id: MetadataService
+    - type: service
+      id: AuthService
+  badges:
+    - content: Observability
+      backgroundColor: green
+      textColor: green
+adr-platform-0004-uuid-primary-keys:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0004-use-uuid-as-primary-keys.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: entity
+      id: Link
+    - type: container
+      id: link-postgres
+  amendedBy:
+    - id: adr-platform-0034-migrate-to-uuid-v7
+  badges:
+    - content: Data
+      backgroundColor: blue
+      textColor: blue
+adr-platform-0005-singleflight-debouncing:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0005-use-singleflight-for-debouncing.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Link
+    - type: container
+      id: proxy-redis-cache
+  related:
+    - id: adr-platform-0022-cache-strategy
+  badges:
+    - content: Performance
+      backgroundColor: orange
+      textColor: orange
+adr-platform-0006-codeowners:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0006-codeowner.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: team
+      id: platform
+    - type: team
+      id: link-platform
+    - type: team
+      id: auth-platform
+  badges:
+    - content: Process
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0007-network-optimization:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0007-optimization-network.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Link
+    - type: service
+      id: LinkService
+    - type: service
+      id: ProxyService
+  badges:
+    - content: Performance
+      backgroundColor: orange
+      textColor: orange
+adr-platform-0008-product-metrics:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0008-product-metrics-by-services.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  related:
+    - id: adr-platform-0018-service-metrics
+  badges:
+    - content: Observability
+      backgroundColor: green
+      textColor: green
+adr-platform-0009-naming-spans-and-attributes:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0009-naming-spans-and-attributes.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: LinkService
+    - type: service
+      id: ProxyService
+  badges:
+    - content: Observability
+      backgroundColor: green
+      textColor: green
+adr-platform-0010-logger-format:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0010-logger-format.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  badges:
+    - content: Observability
+      backgroundColor: green
+      textColor: green
+adr-platform-0011-architecture-documentation:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0011-application-architecture-documentation.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  amendedBy:
+    - id: adr-platform-0043-likec4-for-c4-diagrams
+  badges:
+    - content: Documentation
+      backgroundColor: purple
+      textColor: purple
+adr-platform-0012-monorepository:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0012-use-monorepository.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Link
+    - type: domain
+      id: Auth
+  related:
+    - id: adr-platform-0036-nx-monorepo
+  badges:
+    - content: Process
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0013-security:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0013-security.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Auth
+  badges:
+    - content: Security
+      backgroundColor: red
+      textColor: red
+adr-platform-0014-observability-tooling:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0014-observability.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: LinkService
+    - type: service
+      id: Kratos
+    - type: service
+      id: Oathkeeper
+    - type: system
+      id: istio-edge
+  related:
+    - id: adr-platform-0009-naming-spans-and-attributes
+    - id: adr-platform-0018-service-metrics
+  badges:
+    - content: Observability
+      backgroundColor: green
+      textColor: green
+adr-platform-0015-authentication:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0015-authentication.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Auth
+  related:
+    - id: adr-auth-0001-zero-trust-authentication-flow
+  badges:
+    - content: Security
+      backgroundColor: red
+      textColor: red
+adr-platform-0016-ddd-and-clean-architecture:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0016-use-domain-driven-developer.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Link
+    - type: entity
+      id: Link
+  badges:
+    - content: Architecture
+      backgroundColor: blue
+      textColor: blue
+adr-platform-0017-profile-guided-optimization:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0017-profile-guided-optimization.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: LinkService
+    - type: service
+      id: LinkBFF
+    - type: service
+      id: MetadataService
+  badges:
+    - content: Performance
+      backgroundColor: orange
+      textColor: orange
+adr-platform-0018-service-metrics:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0018-service-metrics.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: container
+      id: proxy-redis-cache
+  related:
+    - id: adr-platform-0023-naming-prometheus-metrics
+    - id: adr-platform-0008-product-metrics
+  badges:
+    - content: Observability
+      backgroundColor: green
+      textColor: green
+adr-platform-0019-front-end-testing:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0019-front-end-testing.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: WebUI
+  badges:
+    - content: Testing
+      backgroundColor: yellow
+      textColor: yellow
+adr-platform-0020-k6:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0020-k6.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Link
+  badges:
+    - content: Testing
+      backgroundColor: yellow
+      textColor: yellow
+adr-platform-0021-microservice-structure:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0021-microservice-structure.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Link
+  related:
+    - id: adr-platform-0011-architecture-documentation
+  badges:
+    - content: Process
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0022-cache-strategy:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0022-cache.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: container
+      id: proxy-redis-cache
+  related:
+    - id: adr-proxy-0007-redis-caching
+    - id: adr-platform-0005-singleflight-debouncing
+  badges:
+    - content: Performance
+      backgroundColor: orange
+      textColor: orange
+adr-platform-0023-naming-prometheus-metrics:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0023-naming-prometheus-metrics.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: LinkService
+    - type: service
+      id: ProxyService
+  related:
+    - id: adr-platform-0018-service-metrics
+  badges:
+    - content: Observability
+      backgroundColor: green
+      textColor: green
+adr-platform-0024-remote-development-tool:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0024-selecting-a-development-tool-for-remote-machine.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  badges:
+    - content: Tooling
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0025-configuration:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0025-configuration.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: LinkService
+    - type: service
+      id: ProxyService
+  badges:
+    - content: Process
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0026-database-per-service:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0026-pattern-database-per-service.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: container
+      id: link-postgres
+    - type: container
+      id: kratos-postgres
+  badges:
+    - content: Data
+      backgroundColor: blue
+      textColor: blue
+adr-platform-0027-orm-and-golang:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0027-orm-and-golang.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: LinkService
+  badges:
+    - content: Data
+      backgroundColor: blue
+      textColor: blue
+adr-platform-0028-go-debug-concurrency:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0028-go-and-debug-concurrency.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: LinkService
+  badges:
+    - content: Cookbook
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0029-go-key-recommendations:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0029-go-key-recommendations.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: entity
+      id: Link
+    - type: service
+      id: LinkService
+    - type: service
+      id: LinkBFF
+    - type: service
+      id: MetadataService
+  badges:
+    - content: Go
+      backgroundColor: blue
+      textColor: blue
+adr-platform-0030-ubiquitous-language:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0030-ubiquitous-language.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Link
+    - type: domain
+      id: Auth
+  related:
+    - id: adr-platform-0016-ddd-and-clean-architecture
+  badges:
+    - content: DDD
+      backgroundColor: purple
+      textColor: purple
+adr-platform-0031-js-package-manager:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0031-js-package-manager.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: WebUI
+    - type: service
+      id: ProxyService
+  badges:
+    - content: Tooling
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0032-python-code-style:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0032-python-code-style-selection.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: AdminService
+  badges:
+    - content: Tooling
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0033-background-job:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0033-background-job.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Auth
+    - type: container
+      id: proxy-redis-cache
+    - type: system
+      id: temporal
+  badges:
+    - content: Infrastructure
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0034-migrate-to-uuid-v7:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0034-migrate-to-uuid-v7.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: entity
+      id: Link
+    - type: container
+      id: link-postgres
+  amends:
+    - id: adr-platform-0004-uuid-primary-keys
+  badges:
+    - content: Data
+      backgroundColor: blue
+      textColor: blue
+adr-platform-0035-use-cloudflare:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0035-use-cloudflare.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: system
+      id: access-proxy-system
+    - type: system
+      id: istio-edge
+  badges:
+    - content: Security
+      backgroundColor: red
+      textColor: red
+    - content: Infrastructure
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0036-nx-monorepo:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0036-nx-monorepo.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  related:
+    - id: adr-platform-0012-monorepository
+  badges:
+    - content: Deprecated
+      backgroundColor: red
+      textColor: red
+adr-platform-0037-ui-security:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0037-ui-security.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: WebUI
+  related:
+    - id: adr-platform-0035-use-cloudflare
+  badges:
+    - content: Security
+      backgroundColor: red
+      textColor: red
+adr-platform-0038-cloudflare-apps:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0038-transition-to-cloudflare-apps.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: WebUI
+  related:
+    - id: adr-platform-0035-use-cloudflare
+  badges:
+    - content: Infrastructure
+      backgroundColor: gray
+      textColor: gray
+adr-platform-0039-ui-accessibility:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0039-ui-accessibility.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: service
+      id: WebUI
+  badges:
+    - content: UI
+      backgroundColor: purple
+      textColor: purple
+adr-platform-0040-ui-kit:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0040-ui-kit.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Auth
+    - type: service
+      id: AuthUI
+    - type: service
+      id: WebUI
+  badges:
+    - content: UI
+      backgroundColor: purple
+      textColor: purple
+adr-platform-0041-process-for-adding-new-events:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0041-process-for-adding-new-events.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Link
+    - type: service
+      id: LinkService
+  amends:
+    - id: adr-platform-0002-canonical-event-naming
+  badges:
+    - content: Process
+      backgroundColor: gray
+      textColor: gray
+    - content: Messaging
+      backgroundColor: yellow
+      textColor: yellow
+adr-platform-0042-link-privacy-control:
+  source: shortlink-org/shortlink:docs/ADR/decisions/0042-link-privacy-control.md
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Link
+    - type: entity
+      id: Link
+    - type: service
+      id: LinkService
+    - type: service
+      id: ProxyService
+    - type: system
+      id: redirect-system
+    - type: container
+      id: proxy-redis-cache
+  related:
+    - id: adr-auth-0003-access-control-schema
+  badges:
+    - content: Security
+      backgroundColor: red
+      textColor: red
+    - content: Core domain
+      backgroundColor: blue
+      textColor: blue
+adr-platform-0043-likec4-for-c4-diagrams:
+  origin: catalog
+  location: adrs
+  owners:
+    - platform
+  decisionMakers:
+    - platform
+  appliesTo:
+    - type: domain
+      id: Shop
+    - type: domain
+      id: Delivery
+    - type: system
+      id: order-system
+    - type: system
+      id: catalog-system
+    - type: system
+      id: delivery-system
+    - type: system
+      id: courier-emulation-system
+  amends:
+    - id: adr-platform-0011-architecture-documentation
+  badges:
+    - content: Documentation
+      backgroundColor: purple
+      textColor: purple
+adr-auth-0001-init:
+  source: shortlink-org/auth:boundaries/auth/docs/ADR/decisions/0001-init.md
+  location: domains/Auth/adrs
+  owners:
+    - auth-platform
+adr-auth-0001-zero-trust-authentication-flow:
+  source: shortlink-org/auth:docs/ADR/decisions/0001-zero-trust-authentication-flow-browser-istio-oathkeeper-bff.md
+  location: domains/Auth/adrs
+  owners:
+    - auth-platform
+  decisionMakers:
+    - auth-platform
+  appliesTo:
+    - type: domain
+      id: Auth
+    - type: system
+      id: access-proxy-system
+    - type: system
+      id: identity-system
+    - type: service
+      id: Oathkeeper
+    - type: service
+      id: Kratos
+    - type: entity
+      id: AccessToken
+  badges:
+    - content: Zero Trust
+      backgroundColor: purple
+      textColor: purple
+adr-auth-0002-permissions-with-spicedb:
+  source: shortlink-org/auth:boundaries/auth/docs/ADR/decisions/0002-permissions.md
+  location: domains/Auth/adrs
+  owners:
+    - auth-platform
+  decisionMakers:
+    - auth-platform
+  appliesTo:
+    - type: domain
+      id: Auth
+    - type: system
+      id: permission-system
+    - type: service
+      id: AuthService
+    - type: container
+      id: spicedb
+  badges:
+    - content: Authorization
+      backgroundColor: yellow
+      textColor: yellow
+adr-auth-0003-access-control-schema:
+  source: shortlink-org/auth:boundaries/auth/docs/ADR/decisions/0003-access-control-schema.md
+  location: domains/Auth/adrs
+  owners:
+    - auth-platform
+  decisionMakers:
+    - auth-platform
+  appliesTo:
+    - type: domain
+      id: Auth
+    - type: system
+      id: permission-system
+    - type: container
+      id: spicedb
+    - type: entity
+      id: Team
+  related:
+    - id: adr-auth-0002-permissions-with-spicedb
+  badges:
+    - content: Authorization
+      backgroundColor: yellow
+      textColor: yellow
+adr-courier-emulation-0001-init:
+  source: shortlink-org/shop:courier-emulation/docs/ADR/decisions/0001-init.md
+  location: domains/Delivery/systems/courier-emulation-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: CourierEmulationService
+adr-courier-emulation-0002-c4-system:
+  source: shortlink-org/shop:courier-emulation/docs/ADR/decisions/0002-c4-system.md
+  location: domains/Delivery/systems/courier-emulation-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: CourierEmulationService
+adr-courier-emulation-0003-osrm-routing:
+  source: shortlink-org/shop:courier-emulation/docs/ADR/decisions/0003-osrm-routing.md
+  location: domains/Delivery/systems/courier-emulation-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: CourierEmulationService
+adr-delivery-0001-init:
+  source: shortlink-org/shop:delivery/docs/ADR/decisions/0001-init.md
+  location: domains/Delivery/systems/delivery-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: DeliveryService
+adr-delivery-0002-c4-system:
+  source: shortlink-org/shop:delivery/docs/ADR/decisions/0002-c4-system.md
+  location: domains/Delivery/systems/delivery-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: DeliveryService
+adr-delivery-0003-domain-structure:
+  source: shortlink-org/shop:delivery/docs/ADR/decisions/0003-domain-structure.md
+  location: domains/Delivery/systems/delivery-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: DeliveryService
+adr-delivery-0004-dispatching-and-geolocation:
+  source: shortlink-org/shop:delivery/docs/ADR/decisions/0004-dispatching-and-geolocation.md
+  location: domains/Delivery/systems/delivery-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: DeliveryService
+adr-delivery-graphql-0001-init:
+  source: shortlink-org/shop:delivery-graphql/docs/ADR/decisions/0001-init.md
+  location: domains/Delivery/systems/delivery-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: DeliveryGraphQL
+adr-support-0001-init:
+  source: shortlink-org/shop:support/docs/ADR/decisions/0001-init.md
+  location: domains/Delivery/systems/delivery-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: SupportService
+adr-support-0002-network:
+  source: shortlink-org/shop:support/docs/ADR/decisions/0002-network.md
+  location: domains/Delivery/systems/delivery-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: SupportService
+adr-link-0001-init:
+  source: shortlink-org/shortlink:boundaries/link/docs/ADR/decisions/0001-init.md
+  location: domains/Link/adrs
+  owners:
+    - link-platform
+adr-link-0002-store-provider:
+  source: shortlink-org/shortlink:boundaries/link/docs/ADR/decisions/0002-store-provider.md
+  location: domains/Link/adrs
+  owners:
+    - link-platform
+  decisionMakers:
+    - link-platform
+  appliesTo:
+    - type: service
+      id: LinkService
+    - type: container
+      id: link-postgres
+adr-link-0003-c4-system:
+  source: shortlink-org/shortlink:boundaries/link/docs/ADR/decisions/0003-c4-system.md
+  location: domains/Link/adrs
+  owners:
+    - link-platform
+adr-link-0004-domain-link:
+  source: shortlink-org/shortlink:boundaries/link/docs/ADR/decisions/0004-domain-link.md
+  location: domains/Link/adrs
+  owners:
+    - link-platform
+  decisionMakers:
+    - link-platform
+  appliesTo:
+    - type: domain
+      id: Link
+    - type: entity
+      id: Link
+    - type: service
+      id: LinkService
+    - type: container
+      id: link-postgres
+  badges:
+    - content: Core domain
+      backgroundColor: blue
+      textColor: blue
+adr-proxy-0001-connect-interceptors:
+  source: shortlink-org/shortlink:boundaries/proxy/docs/ADR/decisions/0001-connect-interceptors.md
+  location: domains/Link/systems/redirect-system/adrs
+  owners:
+    - link-platform
+adr-proxy-0002-clean-architecture:
+  source: shortlink-org/shortlink:boundaries/proxy/docs/ADR/decisions/0002-clean-architecture.md
+  location: domains/Link/systems/redirect-system/adrs
+  owners:
+    - link-platform
+adr-proxy-0003-use-case-pipeline:
+  source: shortlink-org/shortlink:boundaries/proxy/docs/ADR/decisions/0003-use-case-pipeline.md
+  location: domains/Link/systems/redirect-system/adrs
+  owners:
+    - link-platform
+adr-proxy-0004-anti-corruption-layer:
+  source: shortlink-org/shortlink:boundaries/proxy/docs/ADR/decisions/0004-anti-corruption-layer.md
+  location: domains/Link/systems/redirect-system/adrs
+  owners:
+    - link-platform
+  decisionMakers:
+    - link-platform
+  appliesTo:
+    - type: service
+      id: ProxyService
+    - type: system
+      id: redirect-system
+adr-proxy-0005-event-driven-architecture:
+  source: shortlink-org/shortlink:boundaries/proxy/docs/ADR/decisions/0005-event-driven-architecture.md
+  location: domains/Link/systems/redirect-system/adrs
+  owners:
+    - link-platform
+  decisionMakers:
+    - link-platform
+  appliesTo:
+    - type: service
+      id: ProxyService
+    - type: event
+      id: LinkRedirected
+    - type: channel
+      id: link.link.redirected.v1
+adr-proxy-0006-permissions-api-zero-trust:
+  source: shortlink-org/shortlink:boundaries/proxy/docs/ADR/decisions/0006-permissions-api-zero-trust.md
+  location: domains/Link/systems/redirect-system/adrs
+  owners:
+    - link-platform
+adr-proxy-0007-redis-caching:
+  source: shortlink-org/shortlink:boundaries/proxy/docs/ADR/decisions/0007-redis-caching.md
+  location: domains/Link/systems/redirect-system/adrs
+  owners:
+    - link-platform
+  decisionMakers:
+    - link-platform
+  appliesTo:
+    - type: service
+      id: ProxyService
+    - type: container
+      id: proxy-redis-cache
+adr-shop-0001-init:
+  source: shortlink-org/shop:docs/ADR/decisions/0001-init.md
+  location: domains/Shop/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: domain
+      id: Shop
+adr-shop-0002-c4-model:
+  source: shortlink-org/shop:docs/ADR/decisions/0002-c4-model.md
+  location: domains/Shop/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: domain
+      id: Shop
+adr-shop-0003-requirements:
+  source: shortlink-org/shop:docs/ADR/decisions/0003-requirements.md
+  location: domains/Shop/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: domain
+      id: Shop
+adr-shop-0004-use-postman-collection-for-api-documentation:
+  source: shortlink-org/shop:docs/ADR/decisions/0004-use-postman-collection-for-api-documentation.md
+  location: domains/Shop/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: domain
+      id: Shop
+adr-shop-0005-oathkeeper-auth-shop:
+  source: shortlink-org/shop:docs/ADR/decisions/0005-oathkeeper-auth-shop.md
+  location: domains/Shop/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: domain
+      id: Shop
+adr-shop-0006-goods-leaderboard-read-model:
+  source: shortlink-org/shop:docs/ADR/decisions/0006-goods-leaderboard-read-model.md
+  location: domains/Shop/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: domain
+      id: Shop
+adr-admin-0001-init:
+  source: shortlink-org/shop:admin/docs/ADR/decisions/0001-init.md
+  location: domains/Shop/systems/catalog-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: AdminService
+adr-admin-0002-auth-mode:
+  source: shortlink-org/shop:admin/docs/ADR/decisions/0002-auth-mode.md
+  location: domains/Shop/systems/catalog-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: AdminService
+adr-admin-0003-rest-framework:
+  source: shortlink-org/shop:admin/docs/ADR/decisions/0003-rest-framework.md
+  location: domains/Shop/systems/catalog-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: AdminService
+adr-admin-0004-c4-system:
+  source: shortlink-org/shop:admin/docs/ADR/decisions/0004-c4-system.md
+  location: domains/Shop/systems/catalog-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: AdminService
+adr-oms-0001-init:
+  source: shortlink-org/shop:oms/docs/ADR/decisions/0001-init.md
+  location: domains/Shop/systems/order-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: OMSService
+adr-oms-0002-c4-system:
+  source: shortlink-org/shop:oms/docs/ADR/decisions/0002-c4-system.md
+  location: domains/Shop/systems/order-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: OMSService
+adr-oms-0003-temporal:
+  source: shortlink-org/shop:oms/docs/ADR/decisions/0003-temporal.md
+  location: domains/Shop/systems/order-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: OMSService
+adr-oms-0004-hexagonal-architecture-with-temporal:
+  source: shortlink-org/shop:oms/docs/ADR/decisions/0004-hexagonal-architecture-with-temporal.md
+  location: domains/Shop/systems/order-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: OMSService
+adr-oms-0005-reliable-domain-events-outbox:
+  # The upstream file carries no `Date:` line and EventCatalog requires one. This is the date
+  # the catalog already recorded for the decision — confirm it against the shop repository.
+  date: 2026-02-03
+  source: shortlink-org/shop:oms/docs/ADR/decisions/0005-reliable-domain-events-outbox.md
+  location: domains/Shop/systems/order-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: OMSService
+    - type: container
+      id: oms-postgres
+  related:
+    - id: adr-oms-0004-hexagonal-architecture-with-temporal
+adr-oms-graphql-0001-init-project:
+  source: shortlink-org/shop:oms-graphql/docs/ADR/decisions/0001-init-project.md
+  location: domains/Shop/systems/order-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: OMSGraphQL
+adr-oms-graphql-0002-c4-system:
+  source: shortlink-org/shop:oms-graphql/docs/ADR/decisions/0002-c4-system.md
+  location: domains/Shop/systems/order-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: OMSGraphQL
+adr-oms-graphql-0003-migrate-to-cosmo-connect-grpc:
+  source: shortlink-org/shop:oms-graphql/docs/ADR/decisions/0003-migrate-to-cosmo-connect-grpc.md
+  location: domains/Shop/systems/order-system/adrs
+  owners:
+    - shop-platform
+  decisionMakers:
+    - shop-platform
+  appliesTo:
+    - type: service
+      id: OMSGraphQL
+  supersedes:
+    - id: adr-oms-graphql-0001-init-project
