@@ -14,9 +14,8 @@ maintained by hand as prose.
 | Boundary | Status | Source |
 |----------|--------|--------|
 | Auth | documented | [shortlink-org/auth](https://github.com/shortlink-org/auth) |
-| Link | documented | [shortlink-org/shortlink](https://github.com/shortlink-org/shortlink) `boundaries/link`, `bff`, `proxy`, `metadata` |
+| Link | documented | [shortlink-org/shortlink](https://github.com/shortlink-org/shortlink) `boundaries/link`, `bff`, `proxy`, `metadata`, `ui` |
 | API | not yet | [shortlink-org/shortlink](https://github.com/shortlink-org/shortlink) `boundaries/api` |
-| UI | not yet | [shortlink-org/shortlink](https://github.com/shortlink-org/shortlink) `boundaries/ui` |
 
 ## Local development
 

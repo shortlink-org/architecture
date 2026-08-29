@@ -1,0 +1,162 @@
+---
+id: WebUI
+name: Web UI
+version: 1.0.0
+summary: |
+  Next.js application for creating, listing and searching links, plus the admin screens. The main product surface.
+owners:
+  - link-platform
+badges:
+  - content: Next.js
+    backgroundColor: gray
+    textColor: gray
+  - content: TypeScript
+    backgroundColor: blue
+    textColor: blue
+  - content: PWA
+    backgroundColor: purple
+    textColor: purple
+repository:
+  language: TypeScript
+  url: 'https://github.com/shortlink-org/shortlink/tree/main/boundaries/ui'
+---
+
+## Overview
+
+The product's own front end. It renders on the server, holds no secrets, and talks to the platform entirely through
+the public API at `shortlink.best` — the same API any other client would use.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Pages
+
+| Route | Access |
+|-------|--------|
+| `/` | public — landing |
+| `/faq`, `/contact`, `/privacy` | public |
+| `/add-link` | signed in |
+| `/links`, `/links/search` | signed in |
+| `/profile` | signed in |
+| `/admin/links`, `/admin/users`, `/admin/groups`, `/admin/sitemap` | admin |
+
+All of them sit under the `/next` base path.
+
+## A layered front end
+
+The interesting thing about this codebase is that it applies the same layering as the Go services, in a browser
+application:
+
+```
+src/domain/link/          link.types.ts, link.errors.ts   — types and the error model
+src/application/link/     createLinkUseCase.ts            — the use case
+src/infrastructure/http/  linkHttpGateway.ts              — the REST adapter
+```
+
+`LinkGateway` is an interface in the domain layer; `LinkHttpGateway` implements it in infrastructure. The use case
+depends on the interface:
+
+```ts
+export class CreateLinkUseCase {
+  constructor(private readonly gateway: LinkGateway) {}
+
+  async execute(command: CreateLinkCommand): Promise<CreateLinkResult> {
+    return this.gateway.createLink(command)
+  }
+}
+```
+
+This is [[adr|adr-platform-0016-ddd-and-clean-architecture]] applied past the backend — the same intent as the
+proxy's anti-corruption layer ([[adr|adr-proxy-0004-anti-corruption-layer]]), in a different language and runtime.
+
+### Errors carry a remedy
+
+`CreateLinkResult` is a discriminated union rather than a thrown exception, and the failure branch is a typed domain
+error:
+
+```ts
+export type LinkDomainError = {
+  code: LinkErrorCode
+  title: string
+  detail: string
+  action: LinkAction    // 'LOGIN' | 'RETRY' | 'NONE'
+}
+```
+
+The codes it maps from the REST response — `SESSION_NOT_FOUND`, `USER_NOT_IDENTIFIED`, `SESSION_METADATA_MISSING`,
+`PERMISSION_DENIED`, `INVALID_TOKEN`, `SERVICE_UNAVAILABLE`, `UNKNOWN` — plus the transport-level `NETWORK_ERROR`
+and `INVALID_RESPONSE` the gateway raises itself.
+
+`action` is the notable field: the backend does not only say what went wrong, it says what the UI should offer the
+person next. A session problem becomes a *log in* button, a transient failure becomes *retry*, and everything else
+becomes neither.
+
+## Session
+
+Identity comes from Kratos directly, not from the BFF:
+
+```ts
+const NEXT_PUBLIC_API_URI = `${process.env.NEXT_PUBLIC_API_URI || ''}/api/auth`
+
+const ory = new FrontendApi(
+  new Configuration({ basePath: NEXT_PUBLIC_API_URI, baseOptions: { withCredentials: true } }),
+)
+```
+
+With nothing configured the base path is relative, so `/api/auth` resolves against the page's own origin and the
+edge takes it to `kratos-public` — the same route the [[domain|Auth]] UI uses.
+
+`ory.toSession()` is wrapped by TanStack Query with a five-minute stale time, exposed through a single
+`SessionContext`, and gated views use a `Private` component. Two query hooks exist deliberately:
+`useSessionQuery` (a session is required) and `useOptionalSessionQuery` (absence is a valid answer, returning
+`null` instead of throwing).
+
+## State
+
+Three state mechanisms coexist, each for a different kind of state:
+
+| | Used for |
+|---|---|
+| TanStack Query | server state — session, links, profile, search |
+| Redux Toolkit + redux-saga | client state and side effects |
+| React Context | the resolved session, shared without prop drilling |
+
+## Observability
+
+| | |
+|---|---|
+| Errors | Sentry (`@sentry/nextjs`, client / server / edge configs) |
+| RUM | Grafana Faro (`FARO_URI`) |
+| Web vitals | attribution for CLS, FCP, FID, INP, LCP, TTFB |
+| Traces | OTLP to `grafana-tempo.grafana:4317` |
+
+Consistent with [[adr|adr-platform-0014-observability-tooling]] — the browser reports into the same Grafana stack
+the services do.
+
+## Push notifications
+
+Firebase Cloud Messaging with a VAPID key and a service worker (`firebase-messaging-sw.js`), wired through a
+`PushNotificationLayout`. This is the one capability in the product that does not go through the platform's own
+messaging: FCM delivers to the device, not Kafka.
+
+## Build and runtime
+
+| | |
+|---|---|
+| Base path | `/next` |
+| Output | `standalone` — a minimal Node runtime image |
+| Port | `8080` |
+| Package manager | pnpm ([[adr|adr-platform-0031-js-package-manager]]), enforced by a `preinstall` hook |
+| UI | `@shortlink-org/ui-kit`, MUI, Tailwind, emotion, next-themes |
+| React | React Compiler enabled, view transitions on |
+| PWA | optional, behind `PWA_ENABLE`; workbox is told not to cache-bust `/api` |
+
+## Testing
+
+Vitest for component tests (`tests/components`), Playwright for end-to-end (`tests/e2e/critical-flows.spec.ts`) —
+single worker, traces and screenshots retained on failure, Allure reporting in CI.
+
+> [!NOTE]
+> A `src/cypress` directory still exists alongside the Playwright suite. [[adr|adr-platform-0019-front-end-testing]]
+> chose Cypress; the current suite is Playwright, and the ADR has not been updated to say so.

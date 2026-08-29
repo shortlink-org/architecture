@@ -73,6 +73,9 @@ Two things this table settles that prose about "the edge" tends to blur:
 2. **The redirect path is `/s/<hash>`** — a short link is `https://shortlink.best/s/<hash>`, matched by prefix and
    passed through to the proxy.
 
+The services behind these routes are [[service|WebUI]] at `/next`, [[service|ProxyService]] at `/s`,
+[[service|LinkBFF]] behind Oathkeeper at `/api`, and the [[domain|Auth]] pair at `/auth` and `/api/auth`.
+
 ### Cross-namespace references
 
 A route may only point at a Service in another namespace if that namespace grants it. The Oathkeeper chart ships

@@ -1,0 +1,64 @@
+---
+id: web-system
+name: Web System
+version: 1.0.0
+summary: |
+  The browser-facing surface of shortlink — the Next.js application people use to create, manage and search their
+  links.
+scope: internal
+owners:
+  - link-platform
+services:
+  - id: WebUI
+relationships:
+  - id: link-management-system
+    label: creates and lists links through
+  - id: identity-system
+    label: reads the session from
+actors:
+  - id: link-owner
+    name: Link owner
+    label: creates and manages links
+    direction: inbound
+badges:
+  - content: Next.js
+    backgroundColor: gray
+    textColor: gray
+  - content: Browser
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Everything a person does with a link that is not *following* one happens here. The redirect path has its own system
+([[system|redirect-system]]) precisely so that this one can be a conventional web application: session-aware,
+server-rendered, and free to be as heavy as a product UI needs.
+
+## Context Diagram
+
+<ContextDiagram />
+
+## Resource Diagram
+
+<NodeGraph />
+
+## Where it sits
+
+[[service|WebUI]] is served at `https://shortlink.best/next` — an `HTTPRoute` prefix on the same gateway as
+everything else, rewritten to `/` before it reaches the pod. The application itself is built with
+`basePath: '/next'`, so the prefix is part of its own routing rather than only a deployment detail.
+
+Its API calls are **not** proxied through the Next server in the cluster. The browser calls `/api/...` on
+`shortlink.best`, and the Istio edge routes those paths to Oathkeeper and Kratos directly — see
+[[system|istio-edge]]. The Next.js `rewrites` in `next.config.js` exist for the same paths, but matter when the app
+runs outside the cluster.
+
+## Two front ends, one product
+
+This is not the only browser application in the platform. The [[domain|Auth]] boundary has its own Next.js app for
+the Kratos self-service screens, in a separate repository and served at `/auth`.
+
+They are deliberately separate deployables, and the seam is visible to the user only as a navigation between
+`/next` and `/auth`. What holds them together visually is the shared `@shortlink-org/ui-kit`
+([[adr|adr-platform-0040-ui-kit]]).

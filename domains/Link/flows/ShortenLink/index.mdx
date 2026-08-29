@@ -11,8 +11,18 @@ steps:
     actor:
       name: "Link owner"
     next_step:
+      id: "web_ui"
+      label: "Form on /next/add-link"
+
+  - id: "web_ui"
+    title: "Web UI"
+    summary: "CreateLinkUseCase calls LinkHttpGateway — POST /api/links with credentials included"
+    service:
+      id: "WebUI"
+      version: "1.0.0"
+    next_step:
       id: "bff"
-      label: "POST /api/links"
+      label: "POST /api/links via the edge"
 
   - id: "bff"
     title: "Link BFF"

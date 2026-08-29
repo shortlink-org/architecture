@@ -8,6 +8,7 @@ summary: |
 owners:
   - link-platform
 systems:
+  - id: web-system
   - id: link-management-system
   - id: redirect-system
   - id: metadata-system
@@ -43,6 +44,7 @@ posture.
 
 ## Systems
 
+- [[system|web-system]] — the Next.js application people use to create and manage links.
 - [[system|link-management-system]] — owns the link aggregate and the public API over it. Authenticated, low volume,
   strongly consistent.
 - [[system|redirect-system]] — resolves a hash and redirects. Anonymous, high volume, cache-first.
@@ -52,7 +54,8 @@ posture.
 
 ```mermaid
 flowchart LR
-    O[Link owner] --> BFF[Link BFF]
+    O[Link owner] --> W[Web UI]
+    W --> BFF[Link BFF]
     BFF --> LS[Link Service]
     LS --> PG[("link-postgres")]
     LS -->|"link.link.created.v1"| MS[Metadata Service]
