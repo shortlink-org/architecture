@@ -72,8 +72,6 @@ flow from Kratos through `@ory/client` and renders whatever nodes come back.
 
 Both routes attach to `external-gateway` in `istio-ingress` — see [[system|istio-edge]].
 
-> [!WARNING]
-> The Kratos **admin** API has no route and, more importantly, no reachable address configured for its callers. The
-> link service needs it to resolve emails for private links and falls back to `http://kratos:4434` in its own
-> namespace, while the Istio egress allowlist does not include `auth/*`. See
-> [[adr|adr-platform-0042-link-privacy-control]].
+The admin API is deliberately unrouted — it is reached only from inside the cluster. Its one consumer in this
+catalog is [[service|LinkService]], which calls `GET /admin/identities/{user_id}` to resolve a caller's email when a
+private link is requested ([[adr|adr-platform-0042-link-privacy-control]]).

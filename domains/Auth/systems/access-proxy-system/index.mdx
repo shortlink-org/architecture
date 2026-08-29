@@ -60,10 +60,9 @@ permits the cross-namespace reference with three `ReferenceGrant`s — for `shor
 
 The full routing table is in [[system|istio-edge]].
 
-> [!NOTE]
-> The Oathkeeper access rule `kratos:public`, matching `https://shortlink.best/api/auth/<**>`, appears unreachable.
-> The Kratos chart declares its own `HTTPRoute` for `/api/auth` straight to `kratos-public:80`, and Gateway API
-> resolves overlapping prefixes by specificity — so `/api/auth` never reaches Oathkeeper for that rule to apply.
+Kratos' own public API is routed around this system: the Kratos chart declares an `HTTPRoute` for `/api/auth`
+straight to `kratos-public:80`, and Gateway API prefers the longer prefix. Login and registration are reachable
+without a session, which is the precondition for obtaining one.
 
 ## Enforcement downstream
 

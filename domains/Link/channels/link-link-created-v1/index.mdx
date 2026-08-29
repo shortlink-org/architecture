@@ -34,6 +34,6 @@ Declared as a Strimzi `KafkaTopic` in the `kafka` namespace by the chart of the 
 | Retention | **2 hours** (`retention.ms: 7200000`) |
 | Segment size | 30MB |
 
-> [!WARNING]
-> Two hours of retention is short for an event log. A consumer that is down longer than that does not catch up — it
-> skips whatever expired. Replaying history is not available on this channel.
+> [!NOTE]
+> Retention is two hours, so this channel is a transport rather than a log. Consumers are expected to be online;
+> there is no history to replay from and no catch-up beyond that window.

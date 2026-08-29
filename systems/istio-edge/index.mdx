@@ -70,8 +70,8 @@ Two things this table settles that prose about "the edge" tends to blur:
 1. **The BFF's own chart routes `/api` to Oathkeeper**, in a different namespace. The Zero Trust chain from
    [[adr|adr-auth-0001-zero-trust-authentication-flow]] is expressed by the service being protected, not by the
    proxy doing the protecting.
-2. **The redirect path is `/s/<hash>`**, not `/<hash>`. [[adr|adr-platform-0042-link-privacy-control]] writes the
-   latter; the deployed `HTTPRoute` matches the former.
+2. **The redirect path is `/s/<hash>`** — a short link is `https://shortlink.best/s/<hash>`, matched by prefix and
+   passed through to the proxy.
 
 ### Cross-namespace references
 
@@ -79,13 +79,15 @@ A route may only point at a Service in another namespace if that namespace grant
 three `ReferenceGrant`s in `auth`, permitting `HTTPRoute`s from `shortlink-link`, `temporal` and `shortlink-shop` to
 reference `oathkeeper-proxy`.
 
-> [!NOTE]
-> `/api/auth` is a longer prefix than `/api`, and Gateway API resolves overlapping prefixes by specificity — so
-> Kratos' public API reaches `kratos-public` **directly, without passing through Oathkeeper**.
->
-> Oathkeeper nonetheless carries an access rule `kratos:public` matching `https://shortlink.best/api/auth/<**>` with
-> `noop` authenticator and mutator. That rule appears unreachable in the current routing: two layers both claim the
-> same path, and the outer one wins.
+### Overlapping prefixes
+
+`/api/auth` and `/api` both match a request to a Kratos endpoint. Gateway API resolves overlapping prefixes by
+specificity, so the longer one wins: Kratos' public API reaches `kratos-public` **directly**, while everything else
+under `/api` goes through Oathkeeper.
+
+The self-service flows therefore stay reachable without a session — which is what makes login possible at all — and
+Oathkeeper's matching `kratos:public` rule (`noop` authenticator and mutator) expresses the same intent one layer
+in.
 
 ## Policies attached to workloads
 
@@ -166,7 +168,8 @@ egress:
       - "spicedb-operator/*"
 ```
 
-`auth/*` is **not** on that list — see [[adr|adr-platform-0042-link-privacy-control]] for why that matters.
+Anything a workload needs outside that set has to be added to the `Sidecar`, so the list doubles as a statement of
+which namespaces a service is expected to talk to.
 
 `NetworkPolicy` is templated but disabled (`networkPolicy.enabled: false`) — isolation is the mesh's job here, not
 the CNI's.
