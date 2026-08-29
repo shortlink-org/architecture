@@ -1,0 +1,38 @@
+---
+id: LinkDeleted
+name: Link deleted
+version: 1.0.0
+summary: |
+  Published when a link is removed. Carries only the hash.
+owners:
+  - link-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: link.link.deleted.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+The only event in the set with a narrow payload: a hash and a timestamp. There is nothing left to describe, and a
+consumer's job is to forget rather than to update.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />
+
+## Delivery
+
+| | |
+|---|---|
+| Canonical name | `link.link.deleted.v1` |
+| Broker | Kafka |
+| Serialization | Protobuf |

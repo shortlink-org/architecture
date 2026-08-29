@@ -1,0 +1,54 @@
+---
+id: GetLinkView
+name: Get link view
+version: 1.0.0
+summary: |
+  Read-side query returning a single enriched link view by hash.
+owners:
+  - link-platform
+schemaPath: schema.proto
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: CQRS read side
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`LinkQueryService.Get` on the read side of the CQRS split. It returns a [[entity|LinkView]] — the link plus the
+metadata attached to it — from [[container|link-cqrs-readmodel]], not from the write store.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />
+
+## Contract
+
+```proto
+service LinkQueryService {
+  // Get returns a LinkView for the given hash.
+  rpc Get(GetRequest) returns(GetResponse) {}
+  // List returns a LinksView for the given filter.
+  rpc List(ListRequest) returns(ListResponse) {}
+}
+
+message GetRequest {
+  // Hash is the hash of the Link to get.
+  string hash = 1;
+}
+
+message GetResponse {
+  // Link is the LinkView for the given hash.
+  LinkView link = 1;
+}
+```
+
+The write side is a separate service (`LinkCommandService`) with `Add`, `Update` and `Delete` — the two never share a
+connection or a store.

@@ -1,0 +1,21 @@
+---
+id: metadata.metadata.extracted.v1
+name: metadata.metadata.extracted.v1
+version: 1.0.0
+summary: |
+  Fanout topic carrying MetadataExtracted events from the metadata service.
+owners:
+  - link-platform
+address: metadata.metadata.extracted.v1
+protocols:
+  - kafka
+  - amqp
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|MetadataService]], consumed by [[service|LinkService]] to update the read model. The
+`metadata` prefix marks it as owned by a different service than the rest of the domain's topics.
+
+<NodeGraph />

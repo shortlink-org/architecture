@@ -1,0 +1,51 @@
+---
+id: LinkCreated
+name: Link created
+version: 1.0.0
+summary: |
+  Published when a new short link has been persisted. Carries the full link, so consumers do not need to call back.
+owners:
+  - link-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: link.link.created.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`LinkCreated` is the event that turns link creation into a platform-wide fact. [[service|MetadataService]] subscribes
+to it to start enrichment; anything else that needs to react to a new link hangs off this event rather than off the
+link service's API.
+
+The payload is the whole link, not just its hash — a consumer can act without a round trip back to
+[[service|LinkService]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />
+
+## Delivery
+
+| | |
+|---|---|
+| Canonical name | `link.link.created.v1` |
+| Broker | Kafka (`MQ_TYPE: kafka`) |
+| Serialization | Protobuf via `ProtoMarshaler` from `go-sdk/cqrs` |
+| DLQ | enabled, 5 retries (`WATERMILL_DLQ_MAX_RETRIES`) |
+
+The name follows the platform standard in [[adr|adr-platform-0002-canonical-event-naming]]:
+`{service}.{aggregate}.{event}.{version}`. Both the Go publisher and the TypeScript consumer derive it from the same
+`link` namer, so the string is not written by hand on either side.
+
+> [!NOTE]
+> `occurred_at` is the event timestamp, distinct from `created_at`, which is the link's own creation time. They differ
+> on replay and on retries out of the DLQ — consumers that need "when did this actually happen" want `occurred_at`.

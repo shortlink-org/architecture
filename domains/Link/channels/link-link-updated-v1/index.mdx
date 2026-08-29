@@ -1,0 +1,21 @@
+---
+id: link.link.updated.v1
+name: link.link.updated.v1
+version: 1.0.0
+summary: |
+  Fanout topic carrying LinkUpdated events.
+owners:
+  - link-platform
+address: link.link.updated.v1
+protocols:
+  - kafka
+  - amqp
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|LinkService]]. Declared as an exchange and registered on the event bus; no consumer is wired
+up in this catalog yet — the topic exists ahead of its subscribers.
+
+<NodeGraph />

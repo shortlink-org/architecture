@@ -1,0 +1,80 @@
+---
+id: ProxyService
+name: Proxy Service
+version: 1.0.0
+summary: |
+  Resolves a short hash to its original URL and redirects the visitor. The hot path of the whole platform.
+owners:
+  - link-platform
+sends:
+  - id: LinkRedirected
+    to:
+      - id: link.link.redirected.v1
+writesTo:
+  - id: proxy-redis-cache
+readsFrom:
+  - id: proxy-redis-cache
+badges:
+  - content: TypeScript
+    backgroundColor: blue
+    textColor: blue
+  - content: Node.js
+    backgroundColor: green
+    textColor: green
+repository:
+  language: TypeScript
+  url: 'https://github.com/shortlink-org/shortlink/tree/main/boundaries/proxy'
+---
+
+## Overview
+
+Every visit to a short link lands here. The proxy takes the hash, resolves it to the original URL, and issues the
+redirect — then publishes [[event|LinkRedirected]] out of band.
+
+It is the one service in the domain that is anonymous by design: redirects do not require a JWT. The link chart
+grants the `shortlink-link-proxy` service account mTLS access to [[service|LinkService]] without one.
+
+## Architecture diagram
+
+<NodeGraph />
+
+<MessageTable format="all" limit={4} />
+
+## Request path
+
+```mermaid
+flowchart LR
+    V[Visitor] --> P[Proxy]
+    P --> C{"Redis cache"}
+    C -->|hit| R[302 to original URL]
+    C -->|miss| L["LinkService<br/>gRPC / Connect"]
+    L --> C
+    L --> R
+    R -.->|async| K["link.link.redirected.v1"]
+```
+
+Caching is two-sided ([[adr|adr-proxy-0007-redis-caching]]): found links are cached for ~1 hour, *misses* for ~5
+minutes. Negative caching is the interesting half — it stops a flood of requests for a hash that does not exist from
+reaching [[service|LinkService]] at all. If Redis is down the proxy degrades gracefully and calls through.
+
+## Architecture
+
+The service is a clean-architecture codebase, and the boundaries are enforced rather than aspirational:
+
+- [[adr|adr-proxy-0004-anti-corruption-layer]] — `LinkServiceACL` maps protobuf to domain entities, so the domain
+  layer never imports generated types
+- [[adr|adr-proxy-0005-event-driven-architecture]] — events are dispatched after the redirect through a
+  notification-pattern `EventDispatcher`
+- [[adr|adr-proxy-0007-redis-caching]] — positive and negative caching in front of the gRPC call
+
+Production also runs under the Node.js Permissions API (`permissions.json`) — the process is restricted at runtime,
+not only by deployment policy.
+
+## Runtime
+
+| | |
+|---|---|
+| Image | `registry.gitlab.com/shortlink-org/shortlink/proxy` |
+| Port | `3020` |
+| Link service | `shortlink-link-link.shortlink-link:50051` |
+| Broker | Kafka — `shortlink-kafka-bootstrap.kafka:9092` |

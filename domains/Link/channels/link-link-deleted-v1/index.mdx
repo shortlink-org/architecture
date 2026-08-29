@@ -1,0 +1,21 @@
+---
+id: link.link.deleted.v1
+name: link.link.deleted.v1
+version: 1.0.0
+summary: |
+  Fanout topic carrying LinkDeleted events.
+owners:
+  - link-platform
+address: link.link.deleted.v1
+protocols:
+  - kafka
+  - amqp
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|LinkService]]. As with the update topic, it is provisioned and published to, but no
+subscriber is registered in the services documented here.
+
+<NodeGraph />

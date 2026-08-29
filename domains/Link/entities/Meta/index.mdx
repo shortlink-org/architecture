@@ -1,0 +1,43 @@
+---
+id: Meta
+name: Meta
+version: 1.0.0
+identifier: id
+summary: Metadata extracted from a link's target page.
+owners:
+  - link-platform
+properties:
+  - name: id
+    type: string
+    required: true
+    description: The URL the metadata was extracted from — not the link hash
+  - name: image_url
+    type: string
+    required: false
+    description: Preview image URL
+  - name: description
+    type: string
+    required: false
+    description: Page description
+  - name: keywords
+    type: string
+    required: false
+    description: Page keywords
+---
+
+## Overview
+
+Owned by [[service|MetadataService]] and travelling to the rest of the domain as [[event|MetadataExtracted]].
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Keyed by URL
+
+`id` is the URL, not the hash. That is the join key used when folding metadata into
+[[container|link-cqrs-readmodel]], and it means metadata is a property of a *target page*, not of a link: two links
+pointing at the same URL describe the same `Meta`.
+
+The flip side is that a link whose URL changes through [[event|LinkUpdated]] does not automatically re-enrich —
+nothing re-triggers extraction for the new target.

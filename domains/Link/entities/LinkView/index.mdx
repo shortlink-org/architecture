@@ -1,0 +1,57 @@
+---
+id: LinkView
+name: Link view
+version: 1.0.0
+identifier: hash
+summary: Read-model projection of a link joined with its extracted metadata.
+owners:
+  - link-platform
+properties:
+  - name: hash
+    type: string
+    required: true
+    description: The link's hash
+    references: Link
+    referencesIdentifier: hash
+    relationType: hasOne
+  - name: url
+    type: string
+    required: true
+    description: The original URL
+  - name: describe
+    type: string
+    required: false
+    description: Description of the link
+  - name: imageUrl
+    type: string
+    required: false
+    description: Preview image extracted from the target page
+  - name: description
+    type: string
+    required: false
+    description: Description extracted from the target page — distinct from `describe`
+  - name: keywords
+    type: string
+    required: false
+    description: Keywords extracted from the target page
+---
+
+## Overview
+
+What `LinkQueryService.Get` and `List` return. It exists in [[container|link-cqrs-readmodel]] only — there is no
+`LinkView` in the write store and no service that owns it as an aggregate.
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## Two descriptions
+
+`describe` is what the link's owner typed. `description` is what [[service|MetadataService]] scraped from the target
+page. They coexist on the view and mean different things — a detail easy to get wrong when building a UI on top of
+this.
+
+## Freshness
+
+Populated in two independent steps: the link fields when the link changes, the metadata fields when
+[[event|MetadataExtracted]] arrives. Between those two moments the view is real but incomplete.

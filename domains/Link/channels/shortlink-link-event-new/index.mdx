@@ -1,0 +1,22 @@
+---
+id: shortlink.link.event.new
+name: shortlink.link.event.new (legacy)
+version: 1.0.0
+summary: |
+  Pre-standard fanout exchange kept for backward compatibility.
+owners:
+  - link-platform
+address: shortlink.link.event.new
+protocols:
+  - kafka
+  - amqp
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Predates the canonical naming standard in [[adr|adr-platform-0002-canonical-event-naming]] — the name has no
+aggregate or version segment. Still declared by [[service|ProxyService]] and provisioned by the link chart, but new
+consumers should bind to the canonical topics instead.
+
+<NodeGraph />

@@ -1,0 +1,60 @@
+---
+id: adr-link-0004-domain-link
+name: "ADR-0004 (link): Domain — Link"
+version: 1.0.0
+summary: No application-level limit on the original URL, and a 6-character hash from a 62-symbol alphabet.
+status: accepted
+date: 2024-03-17
+owners:
+  - link-platform
+decisionMakers:
+  - link-platform
+appliesTo:
+  - type: domain
+    id: Link
+  - type: entity
+    id: Link
+  - type: service
+    id: LinkService
+  - type: container
+    id: link-postgres
+badges:
+  - content: Core domain
+    backgroundColor: blue
+    textColor: blue
+---
+
+> Source: [boundaries/link/docs/ADR/decisions/0004](https://github.com/shortlink-org/shortlink/blob/main/boundaries/link/docs/ADR/decisions/0004-domain-link.md)
+
+## Context
+
+Link is the core domain. Two properties needed pinning down before anything else could be built on it: how long an
+original URL may be, and how short addresses are generated.
+
+## Decision
+
+### URL length
+
+**No explicit application-level limit.** The constraint is whatever the underlying database imposes.
+
+The reasoning: modern databases handle long text efficiently, users should be able to shorten any valid URL, and a
+limit chosen today would need revisiting as URLs get longer.
+
+### Hash
+
+| | |
+|---|---|
+| Length | 6 characters |
+| Alphabet | 62 symbols (`a-z`, `A-Z`, `0-9`) |
+| Address space | 62⁶ ≈ **56,800,235,584** |
+
+Against an estimated 5,000,000 links created daily — roughly 714,285 unique addresses needed per day over a 7-day
+window — the space is four orders of magnitude larger than the requirement, so collisions stay negligible provided
+creation is spread evenly across it.
+
+## Consequences
+
+A large address space and no artificial ceiling on input. The corollary is that the hash is *derived* rather than
+allocated, so the collision argument depends on the distribution of the hash function, not on a counter — and the
+address space is fixed until the length changes, which would be a change to every short link the platform has ever
+issued.

@@ -1,0 +1,31 @@
+---
+id: DeleteLink
+name: DeleteLink
+version: 1.0.0
+summary: |
+  Command to remove a link by hash.
+owners:
+  - link-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Canonical: link.delete_link.v1'
+    backgroundColor: purple
+    textColor: purple
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Registered on the command bus of [[service|LinkService]] under the canonical name `link.delete_link.v1`. Commands use the
+two-part form `{service}.{command}.{version}` from [[adr|adr-platform-0002-canonical-event-naming]] — no aggregate
+segment, unlike events.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

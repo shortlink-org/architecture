@@ -1,0 +1,57 @@
+---
+id: LinkBFF
+name: Link BFF
+version: 0.1.0
+summary: |
+  Backend for frontend. Turns the domain's gRPC APIs into the REST API the web and mobile clients use.
+owners:
+  - link-platform
+specifications:
+  - type: openapi
+    path: api.yaml
+    name: ShortLink API v0.1.0
+badges:
+  - content: Go
+    backgroundColor: blue
+    textColor: blue
+  - content: REST
+    backgroundColor: green
+    textColor: green
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/shortlink/tree/main/boundaries/bff'
+---
+
+## Overview
+
+The BFF is the only part of the domain a browser talks to. It terminates the REST API at
+`https://shortlink.best/api`, and calls [[service|LinkService]] over gRPC behind it.
+
+It is also the service the Zero Trust path in [[domain|Auth]] ends at: Oathkeeper's `api:bff-protected` rule
+forwards `https://shortlink.best/api/<**>` here with a JWT, and the pod's Istio `AuthorizationPolicy` rejects
+anything that arrives without one.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## API
+
+Built with `chi` and generated from the OpenAPI document by `oapi-codegen`. It covers link and sitemap operations
+with `limit`/`cursor` pagination.
+
+> [!NOTE]
+> In the repository the spec is split across five files (`api.yaml`, `base.yaml`, `link.yaml`, `sitemap.yaml`,
+> `config.yaml`) that reference each other with relative `$ref`s. The copy in this catalog is a **bundled**
+> single-file version — the catalog's OpenAPI renderer resolves only the document it is given and silently fails on
+> cross-file references. Regenerate it with `npx @redocly/cli bundle api.yaml -o api.yaml --ext yaml` when the
+> upstream spec changes.
+
+## Runtime
+
+| | |
+|---|---|
+| Image | `registry.gitlab.com/shortlink-org/shortlink/bff` |
+| Port | `7070` |
+| Health / readiness | `:9090` |
+| Upstream from | Oathkeeper (`:4455`) |

@@ -1,0 +1,78 @@
+---
+id: link-management-system
+name: Link Management System
+version: 1.0.0
+summary: |
+  Owns the link aggregate and the public API over it — creating, editing and deleting short links.
+scope: internal
+owners:
+  - link-platform
+services:
+  - id: LinkService
+  - id: LinkBFF
+containers:
+  - id: link-postgres
+  - id: link-cqrs-readmodel
+entities:
+  - id: Link
+  - id: LinkView
+relationships:
+  - id: metadata-system
+    label: publishes LinkCreated to
+  - id: permission-system
+    label: checks link permissions via
+actors:
+  - id: link-owner
+    name: Link owner
+    label: creates and manages links
+    direction: inbound
+badges:
+  - content: Core
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+The write side of the domain. [[service|LinkBFF]] exposes REST to browsers, [[service|LinkService]] holds the
+aggregate and the gRPC contracts, and the two Postgres containers separate the source of truth from the projection
+that reads join against.
+
+## Context Diagram
+
+<ContextDiagram />
+
+## Resource Diagram
+
+<NodeGraph />
+
+## Two API styles over one aggregate
+
+The service carries both a plain CRUD API and a CQRS command/query pair. They are alternatives, not layers:
+
+```mermaid
+flowchart TB
+    subgraph write["Write"]
+      C["LinkCommandService<br/>Add / Update / Delete"]
+      R["LinkService (CRUD)<br/>Add / Update / Delete / Get / List"]
+    end
+    subgraph read["Read"]
+      Q["LinkQueryService<br/>Get / List"]
+    end
+    C --> DB[("link-postgres")]
+    R --> DB
+    Q --> RM[("link-cqrs-readmodel")]
+    DB -.->|"events"| RM
+```
+
+Metadata only ever appears on the query side. A client that reads through the CRUD API gets the link and nothing
+else; the enriched view is exclusive to `LinkQueryService`.
+
+## Authorization
+
+Link permissions live in [[system|permission-system]] in the [[domain|Auth]] domain — the `link` definition in the
+SpiceDB schema (`reader`, `writer`, `linkteam`, `view = reader + writer + linkteam->view_all_links`) describes links
+but is owned there.
+
+The service also carries its own, narrower model on the aggregate itself: an email allowlist, where empty means
+public. Two mechanisms describe who may see a link, in two different places — worth knowing before changing either.

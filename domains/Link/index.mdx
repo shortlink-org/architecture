@@ -1,0 +1,101 @@
+---
+id: Link
+name: Link
+version: 1.0.0
+summary: |
+  The core domain. Turns long URLs into short ones, redirects visitors back to the original, and enriches links with
+  metadata from the pages they point at.
+owners:
+  - link-platform
+systems:
+  - id: link-management-system
+  - id: redirect-system
+  - id: metadata-system
+entities:
+  - id: Link
+  - id: LinkView
+  - id: Meta
+flows:
+  - id: ShortenLink
+  - id: Redirect
+badges:
+  - content: Core domain
+    backgroundColor: blue
+    textColor: blue
+    icon: LinkIcon
+  - content: Event driven
+    backgroundColor: purple
+    textColor: purple
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/shortlink'
+---
+
+## Domain Overview
+
+Link is the domain the product is named after. Everything in it turns on one asymmetry: links are **written rarely
+and read constantly**, and the two paths have almost nothing in common.
+
+That split runs through the whole design — separate systems, separate stores, separate languages, separate security
+posture.
+
+<NodeGraph mode="full" search="false" legend="false" />
+
+## Systems
+
+- [[system|link-management-system]] — owns the link aggregate and the public API over it. Authenticated, low volume,
+  strongly consistent.
+- [[system|redirect-system]] — resolves a hash and redirects. Anonymous, high volume, cache-first.
+- [[system|metadata-system]] — enriches links asynchronously from the pages they point at.
+
+## The write path and the read path
+
+```mermaid
+flowchart LR
+    O[Link owner] --> BFF[Link BFF]
+    BFF --> LS[Link Service]
+    LS --> PG[("link-postgres")]
+    LS -->|"link.link.created.v1"| MS[Metadata Service]
+    MS -->|"metadata.metadata.extracted.v1"| LS
+    LS --> RM[("link-cqrs-readmodel")]
+
+    V[Visitor] --> PX[Proxy Service]
+    PX --> RC[("Redis cache")]
+    PX -->|"gRPC on miss"| LS
+    PX -->|"link.link.redirected.v1"| K[["Kafka"]]
+```
+
+The two halves meet at exactly one point: the proxy calls the link service on a cache miss. Nothing else crosses.
+
+## Messaging
+
+Five events, three commands and two queries, all protobuf over Kafka. Topic names follow the platform standard in
+[[adr|adr-platform-0002-canonical-event-naming]] and are derived from a shared namer rather than written by hand,
+which is why `link.link.created.v1` reads identically in the Go publisher and the TypeScript consumer.
+
+## Consistency
+
+Worth being explicit about, because three different guarantees coexist here:
+
+| Path | Guarantee |
+|------|-----------|
+| Create / update / delete a link | Strongly consistent — one writer, one Postgres |
+| Metadata on a link | Eventually consistent — arrives when the target page has been fetched |
+| Redirect resolution | Stale up to the cache TTL — nothing invalidates on update or delete |
+
+## Key decisions
+
+- [[adr|adr-link-0004-domain-link]] — no URL length limit; a 6-character hash over a 62-symbol alphabet
+- [[adr|adr-link-0002-store-provider]] — which of the eight store drivers are actually supported
+- [[adr|adr-proxy-0007-redis-caching]] — positive and negative caching on the redirect path
+- [[adr|adr-proxy-0005-event-driven-architecture]] — events dispatched off the response path
+- [[adr|adr-proxy-0004-anti-corruption-layer]] — the proxy's domain never sees the link service's protobuf
+
+## Relationship to Auth
+
+Link is protected by, but does not implement, the platform's access control. The SpiceDB `link` definition —
+`reader`, `writer`, `linkteam`, `view = reader + writer + linkteam->view_all_links` — lives in
+[[system|permission-system]] in the [[domain|Auth]] domain.
+
+The [[entity|Link]] aggregate additionally carries an email allowlist of its own, where empty means public. Two
+independent models describe who may see a link.

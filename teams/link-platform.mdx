@@ -1,0 +1,23 @@
+---
+id: link-platform
+name: Link Platform
+summary: Owns the core of shortlink — the link aggregate, the redirect path and link enrichment.
+email: batazor111@gmail.com
+---
+
+## Overview
+
+The Link Platform team owns the [[domain|Link]] boundary: creating and managing short links, serving redirects, and
+enriching links with metadata from their target pages.
+
+## Responsibilities
+
+- **Link aggregate** — the domain model, hashing strategy and storage
+- **Public API** — the REST BFF and the gRPC contracts behind it
+- **Redirect path** — the proxy, its cache and its latency budget
+- **Enrichment** — metadata extraction and the CQRS read model it feeds
+
+## Repository
+
+All services live in the monorepo [shortlink-org/shortlink](https://github.com/shortlink-org/shortlink) under
+`boundaries/`: `link`, `bff`, `proxy`, `metadata`.

@@ -1,0 +1,55 @@
+---
+id: Redirect
+name: "Follow a short link"
+version: "1.0.0"
+summary: "A visitor opens a short link; the proxy resolves it from cache or the link service and redirects, then reports the visit."
+owners:
+  - link-platform
+steps:
+  - id: "visitor"
+    title: "Visitor opens a short link"
+    actor:
+      name: "Visitor"
+    next_step:
+      id: "proxy"
+      label: "GET /{hash}"
+
+  - id: "proxy"
+    title: "Proxy Service"
+    summary: "Checks the Redis cache first — positive and negative entries both count as a hit"
+    service:
+      id: "ProxyService"
+      version: "1.0.0"
+    next_steps:
+      - id: "link_service"
+        label: "Cache miss — resolve over gRPC"
+      - id: "redirect"
+        label: "Cache hit"
+
+  - id: "link_service"
+    title: "Link Service"
+    summary: "Get(hash) — the result, present or absent, is written back to the cache"
+    service:
+      id: "LinkService"
+      version: "1.0.0"
+    next_step:
+      id: "redirect"
+      label: "Original URL"
+
+  - id: "redirect"
+    title: "Visitor is redirected"
+    summary: "302 to the original URL — the response does not wait for the event"
+    actor:
+      name: "Visitor"
+    next_step:
+      id: "link_redirected"
+      label: "Asynchronously"
+
+  - id: "link_redirected"
+    title: "LinkRedirected"
+    message:
+      id: "LinkRedirected"
+      version: "1.0.0"
+---
+
+<NodeGraph />

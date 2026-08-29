@@ -1,0 +1,62 @@
+---
+id: MetadataService
+name: Metadata Service
+version: 1.0.0
+summary: |
+  Enriches links. Fetches the target page after a link is created, extracts title, description, keywords and image,
+  and takes screenshots.
+owners:
+  - link-platform
+receives:
+  - id: LinkCreated
+    from:
+      - id: link.link.created.v1
+sends:
+  - id: MetadataExtracted
+    to:
+      - id: metadata.metadata.extracted.v1
+entities:
+  - id: Meta
+badges:
+  - content: Go
+    backgroundColor: blue
+    textColor: blue
+  - content: Event driven
+    backgroundColor: purple
+    textColor: purple
+repository:
+  language: Go
+  url: 'https://github.com/shortlink-org/shortlink/tree/main/boundaries/metadata'
+---
+
+## Overview
+
+The metadata service exists so that creating a link stays fast. Parsing a remote page is slow and can fail; doing it
+inline would put an arbitrary third-party website on the critical path of "shorten this URL". Instead the work hangs
+off [[event|LinkCreated]] and the result comes back as [[event|MetadataExtracted]].
+
+## Architecture diagram
+
+<NodeGraph />
+
+<MessageTable format="all" limit={4} />
+
+## Use cases
+
+| | |
+|---|---|
+| UC-1 | Manage metadata for URL — parse the target page |
+| UC-2 | Make screenshot from URL |
+
+## Coupling
+
+This service subscribes to another service's event type: it imports `linkpb.LinkCreated` and registers it in its own
+CQRS registry.
+
+```go
+// LinkCreated - metadata service processes new links to extract metadata
+err := registry.RegisterEvent(&linkpb.LinkCreated{})
+```
+
+That is a deliberate shared contract, not an accident — but it means the protobuf definition of `LinkCreated` is a
+published interface of [[service|LinkService]], and changing it is a cross-service change.

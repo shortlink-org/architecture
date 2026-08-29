@@ -1,0 +1,57 @@
+---
+id: redirect-system
+name: Redirect System
+version: 1.0.0
+summary: |
+  The read path. Resolves a short hash and redirects the visitor, as fast and as anonymously as possible.
+scope: internal
+owners:
+  - link-platform
+services:
+  - id: ProxyService
+containers:
+  - id: proxy-redis-cache
+relationships:
+  - id: link-management-system
+    label: resolves hashes via gRPC from
+actors:
+  - id: visitor
+    name: Visitor
+    label: follows a short link
+    direction: inbound
+badges:
+  - content: Hot path
+    backgroundColor: red
+    textColor: red
+---
+
+## Overview
+
+This system does one thing per request: hash in, `302` out. Everything about it is shaped by that — a Redis cache in
+front of the gRPC call, event publishing moved off the response path, and no authentication at all.
+
+## Context Diagram
+
+<ContextDiagram />
+
+## Resource Diagram
+
+<NodeGraph />
+
+## Why it is separate
+
+The redirect path has the opposite profile to link management. It is read-only, anonymous, an order of magnitude
+higher in volume, and its latency is a user-visible property of the product. Splitting it out means it can be cached,
+scaled and hardened independently — and that a slow write path cannot make redirects slow.
+
+It is also the one place in the platform that is exempt from the Zero Trust rule in
+[[adr|adr-auth-0001-zero-trust-authentication-flow]]: the link chart's `AuthorizationPolicy` allows the
+`shortlink-link-proxy` service account through on mTLS without a JWT, because there is no user to authenticate.
+
+## Failure behaviour
+
+| Dependency | If it is down |
+|------------|---------------|
+| Redis | redirects continue, every request goes to the link service |
+| Kafka | redirects continue, the event is lost — publishing is out of band |
+| Link service | cached hashes keep redirecting until their TTL expires; uncached ones fail |

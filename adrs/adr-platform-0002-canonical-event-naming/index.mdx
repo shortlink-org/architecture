@@ -1,0 +1,79 @@
+---
+id: adr-platform-0002-canonical-event-naming
+name: "ADR-0002 (platform): Canonical event and command naming"
+version: 1.0.0
+summary: Every event and command on the platform is named {service}.{aggregate}.{event}.{version}, or {service}.{command}.{version}.
+status: accepted
+date: 2022-08-24
+owners:
+  - link-platform
+decisionMakers:
+  - link-platform
+appliesTo:
+  - type: domain
+    id: Link
+  - type: channel
+    id: link.link.created.v1
+  - type: channel
+    id: link.link.updated.v1
+  - type: channel
+    id: link.link.deleted.v1
+  - type: channel
+    id: link.link.redirected.v1
+  - type: channel
+    id: metadata.metadata.extracted.v1
+badges:
+  - content: Platform-wide
+    backgroundColor: red
+    textColor: red
+---
+
+> Source: [docs/ADR/decisions/0002](https://github.com/shortlink-org/shortlink/blob/main/docs/ADR/decisions/0002-implement-as-event-naming.md) in the monorepo. This is a platform standard, not a Link-domain decision — it is filed at the catalog root and referenced from every domain that publishes messages.
+
+## Context
+
+Event names were invented ad hoc, producing variants like `order.created`, `orderCreated` and `order_new` for the
+same thing. The consequences were concrete: broken analytics and CDC pipelines, awkward Kafka subscriptions,
+retry/DLQ policies that could not be applied by pattern, no way to version a message, and ambiguity for consumers
+written in Go, TypeScript and Python.
+
+The `go-sdk/cqrs` package — a platform CQRS layer over Watermill, Kafka and protobuf — needed a stable naming
+standard to build on.
+
+## Decision
+
+One mandatory scheme for the whole platform.
+
+**Events**
+
+```
+{service}.{aggregate}.{event}.{version}
+```
+
+**Commands**
+
+```
+{service}.{command}.{version}
+```
+
+All parts lowercase, dot-separated. Examples from the ADR: `billing.order.created.v1`, `billing.create_payment.v1`,
+`shop.goods.price_changed.v1`, `oms.reservation.expired.v2`.
+
+## Consequences
+
+Names become derivable rather than written. In the Link domain a single namer produces them on both sides of the
+wire:
+
+```go
+cqrsmessage.NewShortlinkNamer("link")   // Go publisher
+```
+
+```ts
+LinkEventTopics.REDIRECTED  // "link.link.redirected.v1" — TypeScript
+```
+
+Because the version is part of the name, a breaking change is a new topic rather than a mutation of an existing one,
+and old and new consumers can run side by side.
+
+The cost is visible in the catalog: [[channel|shortlink.link.event.new]] predates the standard, has neither aggregate
+nor version segment, and is still declared for backward compatibility.

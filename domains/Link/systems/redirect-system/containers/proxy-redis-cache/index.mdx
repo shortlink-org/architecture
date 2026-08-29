@@ -1,0 +1,37 @@
+---
+id: proxy-redis-cache
+name: Proxy Redis cache
+version: 1.0.0
+container_type: cache
+technology: redis
+authoritative: false
+access_mode: readWrite
+classification: internal
+owners:
+  - link-platform
+summary: Positive and negative cache in front of the link service, on the redirect hot path.
+---
+
+<NodeGraph />
+
+## What is this?
+
+The reason redirects are fast. [[service|ProxyService]] checks Redis before calling
+[[service|LinkService]] over gRPC.
+
+| | TTL |
+|---|---|
+| Positive — link found | ~1 hour |
+| Negative — link missing | ~5 minutes |
+
+Key format: `${CACHE_KEY_PREFIX}:hash:${hash}`.
+
+### Graceful degradation
+
+If Redis is unavailable the proxy keeps serving redirects, falling back to the gRPC call. The cache is an
+optimisation, never a dependency — see [[adr|adr-proxy-0007-redis-caching]].
+
+### Staleness
+
+Nothing invalidates this cache on [[event|LinkUpdated]] or [[event|LinkDeleted]] — entries simply expire. A link
+edited or removed through the API can therefore keep redirecting to its old target for up to the positive TTL.

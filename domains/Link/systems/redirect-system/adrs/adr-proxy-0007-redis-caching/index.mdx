@@ -1,0 +1,55 @@
+---
+id: adr-proxy-0007-redis-caching
+name: "ADR-0007 (proxy): Redis caching"
+version: 1.0.0
+summary: Positive and negative caching in front of the link service, with graceful degradation when Redis is unavailable.
+status: accepted
+date: 2025-01-01
+owners:
+  - link-platform
+decisionMakers:
+  - link-platform
+appliesTo:
+  - type: service
+    id: ProxyService
+  - type: container
+    id: proxy-redis-cache
+---
+
+> Source: [boundaries/proxy/docs/ADR/decisions/0007](https://github.com/shortlink-org/shortlink/blob/main/boundaries/proxy/docs/ADR/decisions/0007-redis-caching.md). The source document is dated `2025-01-XX`; the date above is an approximation of that month.
+
+## Context
+
+Every redirect required a gRPC call to the link service. That meant latency on each request, repeated load for
+popular links, and proxy availability tied to link service availability — with no protection against a temporary
+outage.
+
+## Decision
+
+Cache lookups in Redis.
+
+**Layers**
+
+1. `RedisLinkCache` (`infrastructure/cache/`) — ioredis implementation
+2. `ILinkCache` — interface, so the cache is swappable
+3. Integrated into `LinkServiceRepository`, checked before the adapter
+
+**Strategy**
+
+| | TTL |
+|---|---|
+| Positive — link found | 1 hour (default) |
+| Negative — link missing | 5 minutes (default) |
+
+Key format: `${CACHE_KEY_PREFIX}:hash:${hash}`.
+
+**Graceful degradation** — if Redis is unavailable the application keeps working without the cache.
+
+## Consequences
+
+Popular links are served without touching the link service, and a burst of requests for a non-existent hash is
+absorbed by the negative cache rather than forwarded.
+
+The cost is staleness. Entries expire on a timer and nothing invalidates them on [[event|LinkUpdated]] or
+[[event|LinkDeleted]] — the only non-expiry `clear()` in the code runs when a cached value fails to parse. An edited
+or deleted link can therefore keep redirecting to its previous target for up to the positive TTL.

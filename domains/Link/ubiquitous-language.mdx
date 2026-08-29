@@ -1,0 +1,108 @@
+---
+dictionary:
+  - id: Link
+    name: Link
+    summary: "A shortened URL — the aggregate root: hash, original URL, description, timestamps and an email allowlist."
+    description: |
+      The central concept of the domain. Encapsulated behind getters and produced by a builder; value objects wrap
+      the URL, timestamps and emails.
+
+      Note what a Link is *not*: it does not carry the metadata scraped from its target page. That is
+      [Meta](#Meta), owned by another service and joined in only on the read side.
+    icon: Link
+
+  - id: Hash
+    name: Hash
+    summary: "The 6-character short address, derived from the original URL plus a salt."
+    description: |
+      Six characters from a 62-symbol alphabet (`a-z`, `A-Z`, `0-9`) — about 56.8 billion combinations.
+
+      It is the identifier of a link everywhere in the domain: the key of the redirect lookup, the cache key in
+      Redis, the object id in SpiceDB (`link:<hash>`), and the only field carried by a delete event.
+    icon: Hash
+
+  - id: ShortLink
+    name: Short link
+    summary: "The public address a visitor uses — the site's domain plus a hash."
+    description: |
+      What gets shared. Resolving one is the job of the redirect system and involves no authentication at all.
+    icon: ExternalLink
+
+  - id: Redirect
+    name: Redirect
+    summary: "Forwarding a visitor from a short link to its original URL — the platform's hot path."
+    description: |
+      A cache lookup, a possible gRPC call, and a `302`. Everything about the redirect system is shaped by keeping
+      this short: Redis in front, event publishing behind, no auth on the way.
+    icon: CornerUpRight
+
+  - id: PrivateLink
+    name: Private link
+    summary: "A link with a non-empty email allowlist. An empty allowlist means the link is public."
+    description: |
+      Privacy is derived, not stored as a flag — `IsPublic()` is `len(allowedEmails) == 0`. Emails are normalised
+      before comparison and validated by a chain of specifications: format, duplicates, non-empty, allowlist size.
+
+      This is the link service's own model and is separate from the SpiceDB relations in the Auth domain.
+    icon: Lock
+
+  - id: Meta
+    name: Meta
+    summary: "Title, description, keywords and preview image extracted from the page a link points at."
+    description: |
+      Produced by the metadata service, keyed by **URL** rather than by hash. Metadata is a property of a target
+      page, so two links pointing at the same URL share the same Meta.
+    icon: FileText
+
+  - id: LinkView
+    name: Link view
+    summary: "The read-model projection: a link joined with its extracted metadata."
+    description: |
+      Exists only in the CQRS read model. Carries two similar fields that mean different things — `describe`, typed
+      by the link's owner, and `description`, scraped from the target page.
+    icon: Eye
+
+  - id: CQRS
+    name: CQRS
+    summary: "The split between the command side (writes to Postgres) and the query side (reads from the projection)."
+    description: |
+      In this domain CQRS is literal: `LinkCommandService` and `LinkQueryService` are separate gRPC services over
+      separate stores.
+
+      A plain CRUD `LinkService` exists alongside them. It is a parallel API style, not a layer — and it answers
+      from the write store, so it never returns metadata.
+    icon: Split
+
+  - id: ReadModel
+    name: Read model
+    summary: "The projection that answers queries — rebuilt from events, never the source of truth."
+    description: |
+      Written by two paths inside the link service: link changes from the command side, and metadata updates from
+      the `MetadataExtracted` handler. Its lag behind the write store is the enrichment latency.
+    icon: Database
+
+  - id: CanonicalEventName
+    name: Canonical event name
+    summary: "{service}.{aggregate}.{event}.{version} for events, {service}.{command}.{version} for commands."
+    description: |
+      A platform standard, not a domain convention. Names are derived from a shared namer in both Go and
+      TypeScript, so `link.link.created.v1` is never typed by hand on either side of the wire.
+
+      Because the version is part of the name, a breaking change means a new topic rather than a mutated one.
+    icon: Tag
+
+  - id: Sitemap
+    name: Sitemap
+    summary: "A site's sitemap.xml, parsed to bulk-create links from its URLs."
+    description: |
+      The third use case of the link service (UC-3), with its own domain model and gRPC service. Where the rest of
+      the domain creates links one at a time, this creates them from a crawl.
+    icon: Map
+
+  - id: Salt
+    name: Salt
+    summary: "The value mixed into a URL before hashing, so the short address is not a plain function of the URL."
+    description: |
+      Without it the hash would be guessable and identical across deployments for the same URL.
+    icon: Sparkles
+---

@@ -1,0 +1,62 @@
+---
+id: metadata-system
+name: Metadata System
+version: 1.0.0
+summary: |
+  Enriches links asynchronously — fetches the target page, extracts metadata and takes screenshots.
+scope: internal
+owners:
+  - link-platform
+services:
+  - id: MetadataService
+entities:
+  - id: Meta
+relationships:
+  - id: link-management-system
+    label: publishes MetadataExtracted back to
+badges:
+  - content: Async
+    backgroundColor: purple
+    textColor: purple
+---
+
+## Overview
+
+A single service whose entire job is to keep slow, unreliable work off the link creation path. It wakes on
+[[event|LinkCreated]], fetches whatever the URL points at, and reports back with [[event|MetadataExtracted]].
+
+## Context Diagram
+
+<ContextDiagram />
+
+## Resource Diagram
+
+<NodeGraph />
+
+## The enrichment loop
+
+```mermaid
+sequenceDiagram
+    participant L as LinkService
+    participant K as Kafka
+    participant M as MetadataService
+    participant W as Target website
+
+    L->>K: link.link.created.v1
+    K->>M: LinkCreated
+    M->>W: GET the page
+    W-->>M: HTML
+    Note over M: parse title, description,<br/>keywords, image
+    M->>K: metadata.metadata.extracted.v1
+    K->>L: MetadataExtracted
+    Note over L: update link-cqrs-readmodel<br/>keyed by URL
+```
+
+The loop closes back into the same service it started from. That is what makes the read model eventually consistent
+rather than the link record itself — the write store is never touched by enrichment.
+
+## What can go wrong
+
+The remote site is entirely outside the platform's control: it can be slow, gone, or hostile. Nothing here is on a
+user's critical path, so a failure means a link without metadata, not a failed operation. The trade is that "how long
+until a new link has a preview" is not a number this system alone can promise.

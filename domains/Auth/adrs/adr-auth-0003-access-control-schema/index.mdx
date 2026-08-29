@@ -1,5 +1,5 @@
 ---
-id: adr-0003-access-control-schema
+id: adr-auth-0003-access-control-schema
 name: "ADR-0003: Access control schema definitions in SpiceDB"
 version: 1.0.0
 summary: Defines the user, anonymoususer, team and link definitions and the relations and permissions between them.
@@ -19,7 +19,7 @@ appliesTo:
   - type: entity
     id: Team
 related:
-  - id: adr-0002-permissions-with-spicedb
+  - id: adr-auth-0002-permissions-with-spicedb
 badges:
   - content: Authorization
     backgroundColor: yellow
@@ -30,7 +30,7 @@ badges:
 
 ## Context
 
-Following [[adr|adr-0002-permissions-with-spicedb]], the concrete schema had to be pinned down: which object types
+Following [[adr|adr-auth-0002-permissions-with-spicedb]], the concrete schema had to be pinned down: which object types
 exist, which relations connect them, and which permissions are derived.
 
 ## Decision

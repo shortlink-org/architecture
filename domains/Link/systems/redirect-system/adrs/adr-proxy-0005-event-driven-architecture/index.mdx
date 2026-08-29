@@ -1,0 +1,51 @@
+---
+id: adr-proxy-0005-event-driven-architecture
+name: "ADR-0005 (proxy): Event-driven architecture with the notification pattern"
+version: 1.0.0
+summary: Redirect events are dispatched after the response through an EventDispatcher, keeping event publishing off the synchronous path.
+status: accepted
+date: 2024-12-19
+owners:
+  - link-platform
+decisionMakers:
+  - link-platform
+appliesTo:
+  - type: service
+    id: ProxyService
+  - type: event
+    id: LinkRedirected
+  - type: channel
+    id: link.link.redirected.v1
+---
+
+> Source: [boundaries/proxy/docs/ADR/decisions/0005](https://github.com/shortlink-org/shortlink/blob/main/boundaries/proxy/docs/ADR/decisions/0005-event-driven-architecture.md)
+
+## Context
+
+After a redirect is served there is asynchronous work to do: publish `LinkRedirected` to the message bus, feed
+statistics collection, and leave room for future handlers such as analytics and notifications.
+
+Two requirements followed: keep the synchronous redirect separate from that work, and allow new handlers to be added
+without touching existing code.
+
+## Decision
+
+Implement the notification pattern through an `EventDispatcher`:
+
+```
+domain/events/LinkRedirectedEvent.ts     the domain event
+application/use-cases/PublishEventUseCase.ts
+application/handlers/EventDispatcher.ts  registers many handlers per event
+application/handlers/IEventHandler.ts
+application/handlers/LinkRedirectedEventHandler.ts
+```
+
+Multiple handlers can register for one event; the dispatcher notifies all of them.
+
+## Consequences
+
+Publishing cannot delay or fail a redirect — a broker outage costs events, not availability. Adding a consumer inside
+the proxy means adding a handler, not editing the redirect path.
+
+The other side of that trade: event delivery is best-effort from the proxy's point of view, so
+[[event|LinkRedirected]] must not be treated as a reliable count of visits.

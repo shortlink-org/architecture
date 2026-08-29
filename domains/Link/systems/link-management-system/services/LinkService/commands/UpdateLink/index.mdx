@@ -1,0 +1,31 @@
+---
+id: UpdateLink
+name: UpdateLink
+version: 1.0.0
+summary: |
+  Command to change an existing link.
+owners:
+  - link-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Canonical: link.update_link.v1'
+    backgroundColor: purple
+    textColor: purple
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Registered on the command bus of [[service|LinkService]] under the canonical name `link.update_link.v1`. Commands use the
+two-part form `{service}.{command}.{version}` from [[adr|adr-platform-0002-canonical-event-naming]] — no aggregate
+segment, unlike events.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />

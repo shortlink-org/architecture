@@ -1,0 +1,47 @@
+---
+id: ListLinkViews
+name: List link views
+version: 1.0.0
+summary: |
+  Read-side query returning a filtered collection of enriched link views.
+owners:
+  - link-platform
+schemaPath: schema.proto
+badges:
+  - content: gRPC
+    backgroundColor: green
+    textColor: green
+  - content: CQRS read side
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+`LinkQueryService.List` takes a filter string and returns a `LinksView`.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />
+
+## Contract
+
+```proto
+message ListRequest {
+  // Filter is the filter to apply to the Links.
+  string filter = 1;
+}
+
+message ListResponse {
+  // Links is the LinksView for the given filter.
+  LinksView links = 1;
+}
+```
+
+> [!NOTE]
+> The read-side `List` takes a filter but no pagination — unlike the CRUD `LinkService.List`, which has `limit` and
+> `cursor`. The two list operations in this service are not interchangeable.

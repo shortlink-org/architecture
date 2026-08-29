@@ -1,0 +1,48 @@
+---
+id: adr-proxy-0004-anti-corruption-layer
+name: "ADR-0004 (proxy): Anti-corruption layer for external services"
+version: 1.0.0
+summary: A LinkServiceACL translates the link service's protobuf into proxy domain entities so the domain layer never sees generated types.
+status: accepted
+date: 2024-12-19
+owners:
+  - link-platform
+decisionMakers:
+  - link-platform
+appliesTo:
+  - type: service
+    id: ProxyService
+  - type: system
+    id: redirect-system
+---
+
+> Source: [boundaries/proxy/docs/ADR/decisions/0004](https://github.com/shortlink-org/shortlink/blob/main/boundaries/proxy/docs/ADR/decisions/0004-anti-corruption-layer.md)
+
+## Context
+
+The proxy talks to the link service over gRPC/Connect. Without a translation layer the proxy's domain would depend
+on another service's protobuf types: external API changes would reach into domain code, the domain could not be
+tested without the real service, and dependency inversion would be violated.
+
+## Decision
+
+Introduce an anti-corruption layer:
+
+```
+src/proxy/infrastructure/
+├── anti-corruption/
+│   └── LinkServiceACL.ts             protobuf <-> domain
+├── adapters/
+│   └── LinkServiceConnectAdapter.ts  Connect/gRPC transport
+└── repositories/
+    └── LinkServiceRepository.ts      repository implementation
+```
+
+`LinkServiceACL` maps `LinkProto` to the `Link` entity and `Hash` to a request, and absorbs the edge cases — nulls,
+undefineds, protobuf default values.
+
+## Consequences
+
+The proxy's domain layer has no knowledge of the link service's wire format, and can be tested against a fake
+repository. The cost is a mapping layer to maintain: a new field on `LinkProto` is invisible to the domain until the
+ACL is taught about it, which is the intended trade.

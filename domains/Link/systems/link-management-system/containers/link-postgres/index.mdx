@@ -1,0 +1,39 @@
+---
+id: link-postgres
+name: Link Postgres
+version: 1.0.0
+container_type: database
+technology: postgres
+authoritative: true
+access_mode: readWrite
+classification: internal
+owners:
+  - link-platform
+summary: Authoritative store for links — the write side of the CQRS split.
+---
+
+<NodeGraph />
+
+## What is this?
+
+The system of record for the link aggregate. Selected at runtime by `STORE_TYPE: postgres`; the connection string
+comes from the `shortlink-postgres-pguser-link` secret.
+
+### What does it store?
+
+- **Links** — URL, hash, description, timestamps, email allowlist
+- **Migrations** — twelve numbered migrations covering the links table, full-text search (`000009_fts`), domain
+  handling and hash changes
+
+### Who writes to it?
+
+Only [[service|LinkService]]. [[service|ProxyService]] never touches the database — it goes through gRPC and its own
+cache.
+
+### Notes
+
+The URL column has **no length limit by design** — [[adr|adr-link-0004-domain-link]] leaves the constraint to the
+database rather than the application.
+
+Other backends have drivers in the repository (RAM, MongoDB, Redis, LevelDB, Badger, SQLite, DGraph, MySQL), but see
+[[adr|adr-link-0002-store-provider]] for which are actually supported.

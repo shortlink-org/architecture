@@ -1,0 +1,82 @@
+---
+id: Link
+name: Link
+version: 1.0.0
+identifier: hash
+aggregateRoot: true
+summary: A shortened URL — the aggregate root of the domain.
+owners:
+  - link-platform
+properties:
+  - name: hash
+    type: string
+    required: true
+    description: 6-character identifier derived from URL + salt. The short address itself.
+  - name: url
+    type: URL
+    required: true
+    description: The original, long URL. Wrapped in a value object; no application-level length limit.
+  - name: describe
+    type: string
+    required: false
+    description: Free-text description of the link
+  - name: createdAt
+    type: timestamp
+    required: true
+    description: Creation time
+  - name: updatedAt
+    type: timestamp
+    required: true
+    description: Last modification time
+  - name: allowedEmails
+    type: array
+    items:
+      type: string
+    required: false
+    description: Email allowlist. Empty means the link is public; non-empty makes it private.
+---
+
+## Overview
+
+A properly encapsulated aggregate: every field is unexported and reachable only through getters, and instances are
+produced by a builder rather than constructed literally. `GetAllowedEmails` returns a copy, so a caller cannot mutate
+the allowlist through the slice it receives.
+
+## Entity Properties
+
+<EntityPropertiesTable />
+
+## The hash
+
+Six characters from a 62-symbol alphabet (`a-z`, `A-Z`, `0-9`) — about **56.8 billion** combinations, against an
+estimated 5M links a day. [[adr|adr-link-0004-domain-link]] works the numbers.
+
+The hash is derived from URL + salt, which has a consequence worth stating: it is not an opaque surrogate key. Change
+the URL and the hash of a *new* link for that URL changes too, but the existing link keeps its address.
+
+## Public and private
+
+Privacy is derived from the allowlist rather than stored as a flag:
+
+```go
+func (m *Link) IsPublic() bool {
+	if m == nil {
+		return true
+	}
+
+	return len(m.allowedEmails) == 0
+}
+```
+
+Emails are normalised before comparison, and the allowlist is validated by a chain of specifications — format,
+duplicates, non-empty entries, and a maximum size.
+
+> [!NOTE]
+> This is the second access model for a link. The first is the SpiceDB `link` definition in [[domain|Auth]], with
+> `reader` / `writer` / `linkteam` relations. They are not connected: the allowlist lives on the aggregate in
+> [[container|link-postgres]], the relations live in SpiceDB, and neither is derived from the other.
+
+## Not on the aggregate
+
+`Meta` is deliberately absent. Title, description, keywords and image belong to [[entity|Meta]], are produced by a
+different service, and are joined in only on the read side as [[entity|LinkView]].

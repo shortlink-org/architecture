@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package domain.link.v1;
+
+option go_package = "github.com/shortlink-org/shortlink/boundaries/link/internal/domain/link/v1";
+
+import "google/protobuf/timestamp.proto";
+
+// CreateLink command - canonical name: link.create_link.v1
+// Command to create a new link
+message CreateLink {
+  // URL of the link
+  string url = 1;
+  // Hash by URL + salt
+  string hash = 2;
+  // Describe of link
+  string describe = 3;
+  // Created at timestamp
+  google.protobuf.Timestamp created_at = 4;
+  // Updated at timestamp
+  google.protobuf.Timestamp updated_at = 5;
+}

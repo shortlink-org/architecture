@@ -1,0 +1,82 @@
+---
+id: ShortenLink
+name: "Shorten a link"
+version: "1.0.0"
+summary: "A link owner creates a short link; enrichment then completes asynchronously and lands in the read model."
+owners:
+  - link-platform
+steps:
+  - id: "owner_submits"
+    title: "Link owner submits a URL"
+    actor:
+      name: "Link owner"
+    next_step:
+      id: "bff"
+      label: "POST /api/links"
+
+  - id: "bff"
+    title: "Link BFF"
+    summary: "REST API, reached through Oathkeeper with a JWT"
+    service:
+      id: "LinkBFF"
+      version: "0.1.0"
+    next_step:
+      id: "create_link"
+      label: "gRPC"
+
+  - id: "create_link"
+    title: "CreateLink"
+    message:
+      id: "CreateLink"
+      version: "1.0.0"
+    next_step:
+      id: "link_service"
+      label: "Handle command"
+
+  - id: "link_service"
+    title: "Link Service"
+    summary: "Builds the aggregate, derives the hash from URL + salt, persists to link-postgres"
+    service:
+      id: "LinkService"
+      version: "1.0.0"
+    next_step:
+      id: "link_created"
+      label: "Publish event"
+
+  - id: "link_created"
+    title: "LinkCreated"
+    message:
+      id: "LinkCreated"
+      version: "1.0.0"
+    next_step:
+      id: "metadata_service"
+      label: "link.link.created.v1"
+
+  - id: "metadata_service"
+    title: "Metadata Service"
+    summary: "Fetches the target page and parses title, description, keywords and image"
+    service:
+      id: "MetadataService"
+      version: "1.0.0"
+    next_step:
+      id: "metadata_extracted"
+      label: "Publish result"
+
+  - id: "metadata_extracted"
+    title: "MetadataExtracted"
+    message:
+      id: "MetadataExtracted"
+      version: "1.0.0"
+    next_step:
+      id: "read_model"
+      label: "metadata.metadata.extracted.v1"
+
+  - id: "read_model"
+    title: "Link Service updates the read model"
+    summary: "MetadataUpdate keyed by URL — the LinkView is now complete"
+    service:
+      id: "LinkService"
+      version: "1.0.0"
+---
+
+<NodeGraph />

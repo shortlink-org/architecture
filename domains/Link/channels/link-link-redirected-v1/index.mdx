@@ -1,0 +1,21 @@
+---
+id: link.link.redirected.v1
+name: link.link.redirected.v1
+version: 1.0.0
+summary: |
+  Fanout topic carrying LinkRedirected events from the proxy.
+owners:
+  - link-platform
+address: link.link.redirected.v1
+protocols:
+  - kafka
+  - amqp
+deliveryGuarantee: at-least-once
+---
+
+## Overview
+
+Produced by [[service|ProxyService]] after every served redirect. This is the highest-volume topic in the domain —
+it fires once per visit, whereas the write-side topics fire once per link change.
+
+<NodeGraph />

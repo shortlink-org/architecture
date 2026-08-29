@@ -1,0 +1,50 @@
+---
+id: adr-link-0002-store-provider
+name: "ADR-0002 (link): Store provider selection"
+version: 1.0.0
+summary: The link service ships drivers for eight stores; only RAM, MongoDB and Postgres are supported, with Postgres in production.
+status: accepted
+date: 2023-05-21
+owners:
+  - link-platform
+decisionMakers:
+  - link-platform
+appliesTo:
+  - type: service
+    id: LinkService
+  - type: container
+    id: link-postgres
+---
+
+> Source: [boundaries/link/docs/ADR/decisions/0002](https://github.com/shortlink-org/shortlink/blob/main/boundaries/link/docs/ADR/decisions/0002-store-provider.md)
+
+## Context
+
+The link service needs a store, and the choice affects batch operations, filtering and how far the service scales.
+
+## Decision
+
+Support a range of stores, selected at runtime through `STORE_TYPE`:
+
+| Store | Supported | Scales |
+|-------|-----------|--------|
+| RAM | ✅ | ❌ |
+| MongoDB | ✅ | ✅ |
+| Postgres | ✅ | ✅ |
+| Redis | ❌ | ✅ |
+| LevelDB | ❌ | ❌ |
+| Badger | ❌ | ❌ |
+| SQLite | ❌ | ❌ |
+| DGraph | ❌ | ✅ |
+
+Support for MySQL, Scylla and Cassandra was dropped (Scylla and Cassandra on 04.08.2021).
+
+## Consequences
+
+Users can run the service against whatever fits their context, which is the point — but every supported backend is
+another integration to keep working and another way for the service to fail.
+
+> [!NOTE]
+> "Supported" in the table above is narrower than "present in the repository". The codebase carries driver packages
+> for Redis, LevelDB, Badger, SQLite, DGraph and MySQL as well; the ADR is the authority on which are actually
+> maintained. Production runs `STORE_TYPE: postgres` — see [[container|link-postgres]].

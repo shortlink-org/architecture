@@ -1,0 +1,43 @@
+---
+id: LinkUpdated
+name: Link updated
+version: 1.0.0
+summary: |
+  Published when an existing link is changed. Carries the full link after the change.
+owners:
+  - link-platform
+schemaPath: schema.proto
+badges:
+  - content: 'Topic: link.link.updated.v1'
+    backgroundColor: yellow
+    textColor: yellow
+  - content: Protobuf
+    backgroundColor: blue
+    textColor: blue
+---
+
+## Overview
+
+Emitted by [[service|LinkService]] after a link's URL or description changes. The payload carries the state *after*
+the change — there is no before/after pair and no field mask on the event, so a consumer that needs to know what
+changed must diff against its own copy.
+
+## Architecture diagram
+
+<NodeGraph />
+
+## Schema
+
+<SchemaViewer file="schema.proto" title="Protobuf schema" maxHeight="400" />
+
+## Delivery
+
+| | |
+|---|---|
+| Canonical name | `link.link.updated.v1` |
+| Broker | Kafka |
+| Serialization | Protobuf |
+
+The hash is derived from URL + salt, so changing the URL of an existing link changes what it points to while keeping
+the same short address. That is the case this event exists to broadcast — caches keyed by hash (notably the
+[[container|proxy-redis-cache]]) hold data that is now wrong.

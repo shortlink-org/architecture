@@ -46,7 +46,7 @@ This is the boundary between "cookies" and "tokens": cookies exist only outside 
 
 Before this system, each BFF called Kratos `/sessions/whoami` itself on every request. That put a synchronous hop
 and a copy of the session-validation middleware into every service.
-[[adr|adr-0001-zero-trust-authentication-flow]] moved that work to the edge.
+[[adr|adr-auth-0001-zero-trust-authentication-flow]] moved that work to the edge.
 
 The whoami call did not disappear — it moved. Oathkeeper still pays ~10–50ms per request, but it pays it once, in
 one place, and the services downstream became stateless with respect to authentication.
