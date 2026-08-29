@@ -6,8 +6,11 @@ Architecture catalog for [shortlink](https://github.com/shortlink-org), built wi
 📖 **https://shortlink-org.github.io/architecture**
 
 The catalog documents shortlink's bounded contexts — the domains, systems, services, containers, entities, flows and
-architecture decisions that make up the platform — and is generated from the source repositories rather than
-maintained by hand as prose.
+architecture decisions that make up the platform.
+
+The prose is written here, not generated: it condenses and cross-links what the source repositories say. What *is*
+derived from upstream is checked automatically, so the catalog cannot drift out of step in silence — see
+[Staying in step with upstream](#staying-in-step-with-upstream).
 
 ## Boundaries
 
@@ -32,6 +35,8 @@ npm run lint           # catalog linter — runs in CI
 npm run build          # static site into dist/
 npm run check:schemas  # compare copied schemas with upstream — runs in CI
 npm run sync:schemas   # rewrite them from upstream
+npm run check:adrs     # compare decision records with upstream — runs in CI
+npm run sync:adrs      # refresh their source hashes, scaffold new upstream decisions
 ```
 
 > [!NOTE]
@@ -41,6 +46,44 @@ npm run sync:schemas   # rewrite them from upstream
 > ```sh
 > rm -rf node_modules/.astro .eventcatalog-core/.astro dist && npm run build
 > ```
+
+## Staying in step with upstream
+
+Two things in this catalog are derived from the source repositories, and each has a check that runs nightly and on
+pull requests that touch it. Both are reported, never silently applied.
+
+**Schemas.** The protobuf and OpenAPI files under each service are copies of upstream contracts.
+`scripts/sync-schemas.mjs` re-derives them and fails when a copy no longer matches.
+
+**Decision records.** The ADRs here are *rewrites* — condensed, and carrying an `appliesTo` / `related` /
+`amendedBy` graph the source repositories do not have. A generator cannot produce that, so it does not try. Instead
+each ADR records where it came from:
+
+```yaml
+x-source:
+  repo: shortlink-org/shortlink
+  path: docs/ADR/decisions/0042-link-privacy-control.md
+  sha256: 2f92b3e7…
+```
+
+`scripts/sync-adrs.mjs` owns that hash and the `date` and `status` fields, and reports:
+
+| | |
+|---|---|
+| `DRIFTED` | the upstream decision was edited — the rewrite needs a human |
+| `STALE` | `date` or `status` no longer matches upstream — `sync:adrs` fixes it |
+| `MISSING` | an upstream decision with no counterpart here — `sync:adrs` scaffolds one to condense |
+| `GONE` | the upstream file was moved or deleted |
+| `UNLINKED` | an ADR that declares neither an upstream source nor `origin: catalog` |
+| `unmapped` | a decision in a directory this catalog has never drawn from — reported only, does not fail |
+
+An ADR written here rather than adapted from upstream declares that explicitly, so it is excluded rather than
+forgotten:
+
+```yaml
+x-source:
+  origin: catalog
+```
 
 ## Layout
 

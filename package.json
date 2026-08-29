@@ -15,6 +15,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "sync:schemas": "node scripts/sync-schemas.mjs",
     "check:schemas": "node scripts/sync-schemas.mjs --check",
+    "sync:adrs": "node scripts/sync-adrs.mjs",
+    "check:adrs": "node scripts/sync-adrs.mjs --check",
     "check:c4": "likec4 validate likec4"
   },
   "dependencies": {
