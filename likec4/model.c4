@@ -1,0 +1,423 @@
+// The single architecture model behind every C4 view in this catalog.
+//
+// One model, many views: instead of redrawing the same services in each ADR,
+// each ADR embeds a view over this model. Element ids follow the catalog
+// (domains > systems > services), so `shop.orderSystem.oms` is the same
+// element the catalog knows as the OMSService service.
+
+model {
+
+  // ── Actors ────────────────────────────────────────────────────────────────
+
+  customer = actor 'Customer' {
+    description 'Buys goods through the online shop.'
+  }
+
+  admin = actor 'Admin' {
+    description 'Manages goods, prices and shop settings.'
+  }
+
+  dispatcher = actor 'Dispatcher' {
+    description 'Assigns packages to couriers and handles delivery exceptions.'
+  }
+
+  courier = actor 'Courier' {
+    description 'Delivers packages to customers.'
+  }
+
+  qaEngineer = actor 'QA Engineer' {
+    description 'Runs courier emulation scenarios.'
+  }
+
+  developer = actor 'Developer' {
+    description 'Debugs delivery and emulation integrations.'
+  }
+
+  // ── Auth domain ───────────────────────────────────────────────────────────
+
+  auth = domain 'Auth' {
+    description 'Identity, permissions and edge authentication.'
+
+    accessProxySystem = system 'Access Proxy System' {
+
+      oathkeeper = service 'Oathkeeper' {
+        technology 'Ory Oathkeeper'
+        description 'Auth proxy: validates the JWT/session with Kratos, injects X-User-ID and forwards traffic to the BFF and Admin.'
+      }
+    }
+  }
+
+  // ── Shop domain ───────────────────────────────────────────────────────────
+
+  shop = domain 'Shop' {
+    description 'Everything about goods, carts, orders and prices.'
+
+    storefrontSystem = system 'Storefront System' {
+
+      shopUi = service 'Shop UI' {
+        technology 'Next.js'
+        description 'Storefront the customer browses and checks out in.'
+      }
+
+      shopBff = service 'Shop BFF' {
+        technology 'Cosmo Router'
+        description 'GraphQL API gateway. Federates the OMS, Delivery and Admin subgraphs for the frontend.'
+      }
+    }
+
+    orderSystem = system 'Order System' {
+
+      omsGraphql = service 'OMS GraphQL Subgraph' {
+        technology 'Go, GraphQL'
+        description 'Translates the OMS gRPC API into the GraphQL subgraph the BFF federates.'
+      }
+
+      pricer = service 'Pricer Service' {
+        technology 'Go, OPA/Rego'
+        description 'Calculates taxes and discounts for a cart or order from OPA policies.'
+      }
+
+      oms = service 'OMS Service' {
+        technology 'Go, Temporal'
+        description 'Owns carts and orders. Runs cart and order workflows on Temporal and publishes domain events through a transactional outbox.'
+
+        omsApi = component 'gRPC API' {
+          technology 'Go'
+          description 'Handles requests and starts, signals and queries workflows.'
+        }
+
+        cartWorker = component 'Cart Worker' {
+          technology 'Go'
+          description 'Executes cart workflows from CART_TASK_QUEUE.'
+        }
+
+        orderWorker = component 'Order Worker' {
+          technology 'Go'
+          description 'Executes order workflows from ORDER_TASK_QUEUE.'
+        }
+      }
+
+      omsDb = database 'OMS Database' {
+        technology 'PostgreSQL'
+        description 'Orders, carts and the transactional outbox.'
+      }
+
+      omsCache = database 'OMS Cache' {
+        technology 'Redis'
+        description 'Caches frequently read order data and the goods leaderboard.'
+      }
+    }
+
+    catalogSystem = system 'Catalog System' {
+
+      adminUi = service 'Admin UI' {
+        technology 'Next.js'
+        description 'Back-office UI for managing goods, prices and shop settings.'
+      }
+
+      adminGraphql = service 'Admin GraphQL Subgraph' {
+        technology 'GraphQL'
+        description 'Admin subgraph federated by the BFF.'
+      }
+
+      adminService = service 'Shop Admin' {
+        technology 'Django'
+        description 'Manages goods, services, roles and permissions.'
+      }
+
+      goodsService = service 'Goods and Prices Service' {
+        technology 'Django'
+        description 'Serves goods and prices to the rest of the shop.'
+      }
+
+      emailSubscription = service 'Email Subscription' {
+        technology 'Temporal'
+        description 'Consumes order events and runs the notification workflows that email customers.'
+      }
+
+      shopDb = database 'Shop Database' {
+        technology 'PostgreSQL'
+        description 'Goods, prices and administrative data.'
+      }
+    }
+  }
+
+  // ── Delivery domain ───────────────────────────────────────────────────────
+
+  delivery = domain 'Delivery' {
+    description 'Package lifecycle, courier dispatch and delivery tracking.'
+
+    deliverySystem = system 'Delivery System' {
+
+      deliveryGraphql = service 'Delivery GraphQL Subgraph' {
+        technology 'Cosmo Connect'
+        description 'Delivery subgraph (couriers, random address) federated by the Shop BFF.'
+      }
+
+      deliveryService = service 'Delivery Service' {
+        technology 'Rust'
+        description 'Manages the package lifecycle, courier assignments and delivery tracking.'
+
+        deliveryApi = component 'gRPC API' {
+          technology 'Rust, Tonic'
+          description 'Handles incoming gRPC requests.'
+        }
+
+        deliveryUseCases = component 'Use Cases' {
+          technology 'Rust'
+          description 'Application layer. Orchestrates the delivery workflows.'
+        }
+
+        deliveryDomainLayer = component 'Domain Layer' {
+          technology 'Rust'
+          description 'Business logic: aggregates, domain services and value objects.'
+
+          packageAggregate = component 'Package Aggregate' {
+            technology 'Rust'
+            description 'State machine for the package lifecycle.'
+          }
+
+          courierAggregate = component 'Courier Aggregate' {
+            technology 'Rust'
+            description 'Courier status and capacity.'
+          }
+
+          locationValueObject = component 'Location VO' {
+            technology 'Rust'
+            description 'GPS coordinates with Haversine distance.'
+          }
+
+          dispatchService = component 'DispatchService' {
+            technology 'Rust'
+            description 'Finds the nearest available courier.'
+          }
+
+          assignmentValidation = component 'AssignmentValidationService' {
+            technology 'Rust'
+            description 'Validates the assignment business rules.'
+          }
+        }
+
+        deliveryProtoModels = component 'Proto Models' {
+          technology 'Protobuf'
+          description 'Commands, events and queries shared across the layers.'
+        }
+      }
+
+      geolocationService = service 'Geolocation Service' {
+        description 'Tracks courier locations in real time.'
+      }
+
+      deliveryDb = database 'Delivery Database' {
+        technology 'PostgreSQL'
+        description 'Packages and couriers.'
+      }
+    }
+
+    courierEmulationSystem = system 'Courier Emulation System' {
+
+      courierEmulation = service 'Courier Emulation' {
+        #emulation
+        technology 'Go'
+        description 'Emulates courier behaviour: movement, locations and status transitions.'
+
+        emulationApi = component 'gRPC API' {
+          technology 'Go, gRPC'
+          description 'Manages emulation runs.'
+        }
+
+        courierSimulator = component 'Courier Simulator' {
+          technology 'Go'
+          description 'Emulates courier movement and actions.'
+
+          courierActor = component 'CourierActor' {
+            technology 'Go'
+            description 'Stateful emulated courier actor.'
+          }
+
+          movementEngine = component 'MovementEngine' {
+            technology 'Go'
+            description 'Calculates movement along the polyline route.'
+          }
+
+          behaviorStrategy = component 'BehaviorStrategy' {
+            technology 'Go'
+            description 'Behaviour strategies: always_accept, realistic, random_failures.'
+          }
+
+          simulationClock = component 'SimulationClock' {
+            technology 'Go'
+            description 'Simulation time: real-time or accelerated.'
+          }
+        }
+
+        routeGenerator = component 'Route Generator' {
+          technology 'Go'
+          description 'Generates and caches routes.'
+
+          osrmClient = component 'OSRMClient' {
+            technology 'Go'
+            description 'HTTP client for the OSRM API.'
+          }
+
+          polylineDecoder = component 'PolylineDecoder' {
+            technology 'Go'
+            description 'Decodes polylines into coordinates.'
+          }
+
+          routeStore = component 'RouteStore' {
+            technology 'Go'
+            description 'Stores and selects routes.'
+          }
+        }
+
+        eventEmitter = component 'Event Emitter' {
+          technology 'Go'
+          description 'Publishes emulation events to Delivery and Geolocation.'
+        }
+
+        routeCache = database 'Route Cache' {
+          technology 'Redis'
+          description 'Generated routes.'
+        }
+      }
+    }
+  }
+
+  // ── Billing domain ────────────────────────────────────────────────────────
+
+  billing = domain 'Billing' {
+    description 'Invoicing and payments. Documented outside this catalog.'
+
+    billingService = external 'Billing Service' {
+      description 'Manages billing and invoices for completed orders.'
+    }
+  }
+
+  // ── Platform and third-party systems ──────────────────────────────────────
+
+  kafka = queue 'Kafka' {
+    description 'Asynchronous communication and event-driven integration between boundaries.'
+  }
+
+  temporal = external 'Temporal' {
+    technology 'Temporal Server'
+    description 'Workflow orchestration for OMS and Email Subscription.'
+  }
+
+  temporalDb = database 'Temporal Database' {
+    technology 'PostgreSQL'
+    description 'Temporal workflow state.'
+  }
+
+  osrm = external 'OSRM' {
+    description 'Open Source Routing Machine. Generates routes for the courier emulation.'
+  }
+
+  pushService = external 'Push Notification Service' {
+    description 'Sends push notifications to couriers.'
+  }
+
+  paymentGateway = external 'Payment Gateway' {
+    description 'Processes payment transactions.'
+  }
+
+  // ── Relationships ─────────────────────────────────────────────────────────
+
+  // Shop: customer path
+  customer -> shopUi 'Accesses the shop UI' 'HTTPS'
+  shopUi -> oathkeeper 'Sends API and admin requests' 'HTTPS'
+  oathkeeper -> shopBff 'Forwards authenticated requests' 'HTTP'
+  oathkeeper -> adminService 'Forwards authenticated requests' 'HTTP'
+
+  // Shop: BFF federation
+  shopBff -> omsGraphql 'Cart and checkout operations' 'GraphQL'
+  shopBff -> deliveryGraphql 'Delivery queries (randomAddress, couriers)' 'GraphQL'
+  shopBff -> adminGraphql 'Administrative queries' 'GraphQL'
+  shopBff -> pricer 'Price calculation requests' 'gRPC'
+  omsGraphql -> oms 'Order and cart operations' 'gRPC'
+  adminGraphql -> adminService 'Admin operations' 'GraphQL/REST'
+  deliveryGraphql -> deliveryService 'Calls the Delivery API' 'gRPC'
+
+  // Shop: order management
+  oms -> temporal 'Starts, signals and queries workflows' 'Temporal API'
+  oms -> pricer 'Gets cart and order totals' 'gRPC'
+  oms -> omsDb 'Reads and writes orders, carts and outbox' 'SQL'
+  oms -> omsCache 'Caches hot order data' 'Redis'
+  oms -> kafka 'Publishes and consumes order events' 'Kafka'
+  oms -> billingService 'Submits order details' 'gRPC/Kafka'
+  oms -> deliveryService 'Sends orders for delivery' 'gRPC/Kafka'
+  oms -> paymentGateway 'Processes payments' 'API'
+  deliveryService -> oms 'Sends delivery status updates' 'Kafka'
+
+  // Shop: OMS internals
+  omsApi -> temporal 'Starts, signals and queries workflows' 'gRPC'
+  omsApi -> omsDb 'Reads and writes order data' 'SQL'
+  omsApi -> omsCache 'Reads hot order data' 'Redis'
+  temporal -> cartWorker 'Dispatches cart workflow tasks' 'gRPC'
+  temporal -> orderWorker 'Dispatches order workflow tasks' 'gRPC'
+  temporal -> temporalDb 'Persists workflow state' 'SQL'
+
+  // Shop: catalog and admin
+  admin -> adminUi 'Manages goods and prices'
+  customer -> adminUi 'Browses goods and checks prices'
+  adminUi -> oathkeeper 'Admin requests' 'HTTPS'
+  adminService -> goodsService 'CRUD operations on goods and prices'
+  adminService -> shopDb 'Reads and writes administrative data' 'SQL'
+  goodsService -> shopDb 'Persists goods and prices' 'SQL'
+
+  // Shop: notifications
+  emailSubscription -> temporal 'Runs notification workflows' 'Temporal API'
+  emailSubscription -> kafka 'Consumes order events' 'Kafka'
+  emailSubscription -> customer 'Sends email notifications' 'SMTP'
+
+  // Delivery: actors
+  dispatcher -> deliveryService 'Manages package assignments' 'gRPC'
+  courier -> deliveryService 'Updates the delivery status' 'gRPC'
+  dispatcher -> deliveryApi 'Assigns packages' 'gRPC'
+  courier -> deliveryApi 'Updates status' 'gRPC'
+
+  // Delivery: service internals
+  deliveryApi -> deliveryUseCases 'Delegates to'
+  deliveryUseCases -> deliveryDomainLayer 'Uses'
+  deliveryUseCases -> deliveryDb 'Reads and writes' 'SQL'
+  deliveryUseCases -> kafka 'Publishes domain events' 'Kafka'
+  deliveryUseCases -> geolocationService 'Gets courier locations' 'gRPC'
+  deliveryUseCases -> pushService 'Sends notifications' 'gRPC'
+  deliveryService -> geolocationService 'Gets and updates courier locations' 'gRPC'
+  deliveryService -> pushService 'Sends notifications' 'gRPC'
+
+  // Delivery: domain layer
+  dispatchService -> courierAggregate 'Filters by status and capacity'
+  dispatchService -> locationValueObject 'Calculates distance'
+  assignmentValidation -> packageAggregate 'Checks the package status'
+  assignmentValidation -> courierAggregate 'Checks courier availability'
+  packageAggregate -> deliveryProtoModels 'Uses proto types'
+  courierAggregate -> deliveryProtoModels 'Uses proto types'
+
+  // Courier emulation
+  qaEngineer -> courierEmulation 'Runs scenarios' 'gRPC'
+  developer -> courierEmulation 'Manages the emulation' 'gRPC'
+  qaEngineer -> emulationApi 'Manages the emulation' 'gRPC'
+  deliveryService -> courierEmulation 'Publishes package assignments' 'Kafka'
+  courierEmulation -> deliveryService 'Publishes pickup and delivery confirmations' 'Kafka'
+  courierEmulation -> geolocationService 'Publishes courier locations' 'Kafka'
+  courierEmulation -> osrm 'Generates routes' 'HTTP'
+
+  emulationApi -> courierSimulator 'Starts the simulation'
+  courierSimulator -> routeGenerator 'Requests a route'
+  courierSimulator -> eventEmitter 'Sends events'
+  routeGenerator -> osrm 'Generates a route' 'HTTP'
+  routeGenerator -> routeCache 'Caches routes'
+  deliveryService -> eventEmitter 'Package assignments' 'Kafka'
+  eventEmitter -> deliveryService 'Pickup and delivery confirmations' 'Kafka'
+  eventEmitter -> geolocationService 'Location updates' 'Kafka'
+
+  // Courier simulator internals
+  courierActor -> movementEngine 'Requests the next position'
+  courierActor -> behaviorStrategy 'Determines the response to an event'
+  movementEngine -> simulationClock 'Applies the simulation speed'
+  movementEngine -> polylineDecoder 'Gets coordinates'
+  routeStore -> osrmClient 'Generates new routes'
+  routeStore -> polylineDecoder 'Decodes the polyline'
+}

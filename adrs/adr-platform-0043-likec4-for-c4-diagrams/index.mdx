@@ -1,0 +1,101 @@
+---
+id: adr-platform-0043-likec4-for-c4-diagrams
+name: "ADR-0043 (platform): LikeC4 for C4 diagrams"
+version: 1.0.0
+summary: C4 diagrams are written as one shared LikeC4 model in likec4/ and embedded in the catalog as views, replacing the per-ADR C4-PlantUML blocks.
+status: accepted
+date: 2026-08-29
+owners:
+  - platform
+decisionMakers:
+  - platform
+appliesTo:
+  - type: domain
+    id: Shop
+  - type: domain
+    id: Delivery
+  - type: system
+    id: order-system
+  - type: system
+    id: catalog-system
+  - type: system
+    id: delivery-system
+  - type: system
+    id: courier-emulation-system
+amends:
+  - id: adr-platform-0011-architecture-documentation
+badges:
+  - content: Documentation
+    backgroundColor: purple
+    textColor: purple
+---
+
+## Context
+
+[ADR-0011](../adr-platform-0011-architecture-documentation) chose the C4 model, drawn in
+[C4-PlantUML](https://github.com/plantuml-stdlib/C4-PlantUML). Every boundary and service ADR therefore opened with a
+`plantuml` block, and each block redrew the elements it needed from scratch.
+
+That worked, but it does not scale across a catalog:
+
+- **The same element is redeclared in every diagram.** `oms_service`, `oms_temporal` and `oms` were three names for the
+  OMS Service across three ADRs, each with its own description and technology label.
+- **Diagrams drift independently.** The Shop container diagram put `Delivery-GraphQL` inside the Shop boundary long
+  after the catalog had moved `DeliveryGraphQL` into the Delivery domain. Nothing flagged the contradiction, because
+  nothing connected the two diagrams.
+- **Rendering needs a server.** Each block pulled `C4_Container.puml` from `raw.githubusercontent.com` at render time.
+- **The output is a picture.** No search, no navigation, no way to walk from a container into its components.
+
+[LikeC4](https://likec4.dev) is architecture-as-code: one model of elements and relationships, and many views over it.
+EventCatalog can embed those views directly with its `<LikeC4View />` component
+([docs](https://www.eventcatalog.dev/blog/c4-and-eventcatalog)).
+
+## Decision
+
+- The **C4 model** stays as the way we describe architecture. ADR-0011 is unchanged on that point.
+- **LikeC4 replaces C4-PlantUML** as the way we draw it.
+- There is **one model for the whole platform**, in [`likec4/`](https://github.com/shortlink-org/architecture/tree/main/likec4):
+
+  ```
+  likec4/
+  ├── specification.c4   # element kinds and their default styling
+  ├── model.c4           # every element and relationship, once
+  └── views/
+      ├── index.c4       # the platform landscape
+      ├── shop.c4        # views embedded by the Shop ADRs
+      └── delivery.c4    # views embedded by the Delivery ADRs
+  ```
+
+- **Element ids follow the catalog**, so `shop.orderSystem.oms` is the element the catalog documents as the
+  `OMSService` service. The hierarchy is `domain > system > service > component`, matching
+  `domains/{Domain}/systems/{System}/services/{Service}`.
+- ADRs embed a view instead of declaring a diagram:
+
+  ```mdx
+  <LikeC4View viewId="omsContext" height="600px" />
+  ```
+
+- `likec4` and `@likec4/icons` are dev dependencies. EventCatalog auto-detects the `.c4` files and loads the LikeC4
+  Vite plugin; the catalog is a single unnamed LikeC4 project, so `<LikeC4View />` needs no `project` prop.
+
+PlantUML stays for diagrams C4 does not cover — sequence diagrams and the Shop Admin use case diagram are still
+`plantuml` blocks.
+
+## Consequences
+
++ **One definition per element.** Renaming the OMS Service or changing its technology is one edit, and every view
+  that shows it follows.
++ **Contradictions become compile errors.** An element can only live in one place in the model, so the
+  `DeliveryGraphQL` ambiguity had to be resolved: it lives in the Delivery domain, and the Shop views include it as a
+  neighbour.
++ **Views are navigable.** Rendered views are interactive — you can walk from a boundary into a service and into its
+  components rather than reading a flat picture.
++ **Diagrams build offline.** No `!include` over the network at render time.
++ **The model is checkable in CI.** `npx likec4 validate likec4` fails on an unresolved reference or an invalid
+  parent-child relationship.
+
+− Writing a view now means editing two files: the model, then the view that includes the new element.
+− View ids are a shared namespace across the catalog, so they have to stay unique and stable — an ADR embeds a view by
+  id, and renaming a view breaks the page that embeds it.
+− The source repositories still carry their own C4-PlantUML diagrams. Until they migrate, the catalog's LikeC4 model
+  and those diagrams can drift; the model in this repository is the authoritative one.

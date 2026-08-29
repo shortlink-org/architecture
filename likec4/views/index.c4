@@ -1,0 +1,13 @@
+// The one view that has no PlantUML ancestor: the whole platform at a glance.
+
+views {
+
+  view index {
+    title 'Platform landscape'
+    description 'The Shop, Delivery, Auth and Billing boundaries and the platform services they share.'
+
+    include *
+
+    autoLayout TopBottom
+  }
+}

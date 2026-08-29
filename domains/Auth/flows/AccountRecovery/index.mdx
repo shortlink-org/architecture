@@ -1,0 +1,85 @@
+---
+id: AccountRecovery
+name: "Account recovery"
+version: "1.0.0"
+summary: "A visitor who cannot sign in receives a recovery code by email, and the accepted code carries them into the settings flow to set a new password."
+owners:
+  - auth-platform
+steps:
+  - id: "visitor"
+    title: "Visitor opens /auth/forgot"
+    actor:
+      name: "Visitor"
+    next_step:
+      id: "auth_ui"
+      label: "Load the recovery form"
+
+  - id: "auth_ui"
+    title: "Auth UI"
+    summary: "The /forgot page renders the Kratos recovery flow"
+    service:
+      id: "AuthUI"
+      version: "1.0.0"
+    next_step:
+      id: "kratos_recovery"
+      label: "Submit the email address"
+
+  - id: "kratos_recovery"
+    title: "Kratos"
+    summary: "Starts the recovery flow for the identity behind the address"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_step:
+      id: "courier"
+      label: "Send the recovery code"
+
+  - id: "courier"
+    title: "Kratos courier"
+    summary: "SMTP, from no-reply@shortlink.best — mailslurper intercepts it in local development"
+    externalSystem:
+      name: "SMTP"
+      summary: "Outbound mail; the courier runs inside Kratos"
+      url: "https://www.ory.sh/docs/kratos/self-service/flows/account-recovery"
+    next_step:
+      id: "visitor_code"
+      label: "Recovery code by email"
+
+  - id: "visitor_code"
+    title: "Visitor submits the code"
+    actor:
+      name: "Visitor"
+    next_step:
+      id: "settings"
+      label: "Code accepted"
+
+  - id: "settings"
+    title: "Settings flow"
+    summary: "Recovery hands over to settings — required_aal highest_available — where the password is replaced"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_step:
+      id: "session"
+      label: "New credentials in place"
+
+  - id: "session"
+    title: "Signed in"
+    summary: "The recovery session becomes an ordinary session — ory_kratos_session, 720h"
+    flow:
+      id: "Login"
+      version: "1.0.0"
+---
+
+<NodeGraph />
+
+## Recovery is a way into settings, not a password reset endpoint
+
+Kratos does not accept a new password on the recovery flow. An accepted code produces a privileged session that the
+settings flow will act on — which is why the state machine draws `Recovery --> Settings` rather than
+`Recovery --> [*]`. Everything that makes the new password valid is the settings flow's rules, the same ones a
+signed-in visitor changing their password goes through.
+
+## Mail is the whole security boundary
+
+There is no second factor in this path. Possession of the mailbox is what proves the account.

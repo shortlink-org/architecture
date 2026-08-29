@@ -1,0 +1,112 @@
+---
+id: TrackOrder
+name: "Track an order"
+version: "1.0.0"
+summary: "A customer watches a delivery from the storefront: one snapshot, or a stream that pushes a new one on every state change."
+owners:
+  - shop-platform
+steps:
+  - id: "customer"
+    title: "Customer opens an order"
+    actor:
+      name: "Customer"
+    next_step:
+      id: "ui"
+      label: "Order page"
+
+  - id: "ui"
+    title: "Shop UI"
+    service:
+      id: "ShopUI"
+      version: "1.0.0"
+    next_step:
+      id: "bff"
+      label: "One federated query, order and tracking together"
+
+  - id: "bff"
+    title: "Shop BFF"
+    summary: "Cosmo Router — composes the carts and delivery subgraphs"
+    service:
+      id: "ShopBFF"
+      version: "1.0.0"
+    next_step:
+      id: "delivery_graphql"
+      label: "delivery subgraph :4013"
+
+  - id: "delivery_graphql"
+    title: "Delivery GraphQL Subgraph"
+    summary: "Lives in Delivery, composed into a graph owned by Shop — the one synchronous path between the boundaries"
+    service:
+      id: "DeliveryGraphQL"
+      version: "1.0.0"
+    next_steps:
+      - id: "get_tracking"
+        label: "Snapshot"
+      - id: "subscribe_tracking"
+        label: "Live"
+
+  - id: "get_tracking"
+    title: "GetOrderTracking"
+    summary: "Keyed by OMS order id — the caller has never seen a package"
+    message:
+      id: "GetOrderTracking"
+      version: "1.0.0"
+    next_step:
+      id: "delivery"
+      label: "gRPC"
+
+  - id: "subscribe_tracking"
+    title: "SubscribeOrderTracking"
+    summary: "The only server-streaming RPC in the catalogue"
+    message:
+      id: "SubscribeOrderTracking"
+      version: "1.0.0"
+    next_step:
+      id: "delivery"
+      label: "gRPC stream"
+
+  - id: "delivery"
+    title: "Delivery Service"
+    summary: "Resolves the package by order_id and answers from its own state"
+    service:
+      id: "DeliveryService"
+      version: "1.0.0"
+    next_step:
+      id: "pubsub"
+      label: "Streams subscribe to the order's channel"
+
+  - id: "pubsub"
+    title: "Delivery Redis"
+    summary: "Per-order pub/sub channel — the replica that handled the transition publishes, the replica holding the stream receives"
+    container:
+      id: "delivery-redis"
+      version: "1.0.0"
+    next_step:
+      id: "transitions"
+      label: "Fed by every package transition"
+
+  - id: "transitions"
+    title: "Package state changes"
+    flow:
+      id: "DeliverPackage"
+      version: "1.0.0"
+---
+
+<NodeGraph />
+
+## Keyed by order, not by package
+
+Both queries take an OMS order id. The customer holds an [[entity|Order]] and has never seen a [[entity|Package]],
+so the cross-boundary reference the package carries exists for exactly this read.
+
+## Why Redis is not a cache here
+
+A transition happens in whichever replica handled it; the stream is held open by whichever replica the customer
+reached. These are rarely the same pod. `infrastructure/messaging/tracking_pubsub.rs` bridges them over
+[[container|delivery-redis]] — without it, live tracking would only work by coincidence.
+
+## The cost of composing across the boundary
+
+[[service|DeliveryGraphQL]] is the single synchronous path from [[domain|Shop]] into [[domain|Delivery]]. It buys a
+customer their tracking in the same response as their order, and it means the Shop graph will not compose unless a
+Delivery-domain service is available at compose time.

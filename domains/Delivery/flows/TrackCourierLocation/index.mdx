@@ -1,0 +1,122 @@
+---
+id: TrackCourierLocation
+name: "Report a courier's position"
+version: "1.0.0"
+summary: "Positions arrive over Kafka rather than the API, are cached with a TTL and appended to history, and are republished as a domain event nobody consumes."
+owners:
+  - shop-platform
+steps:
+  - id: "courier"
+    title: "Courier moves"
+    summary: "Emulated in non-production by CourierEmulationService, walking an OSRM polyline at a configurable speed"
+    service:
+      id: "CourierEmulationService"
+      version: "1.0.0"
+    next_steps:
+      - id: "osrm"
+        label: "Route between pickup and delivery"
+      - id: "location_received"
+        label: "Publish while moving"
+
+  - id: "osrm"
+    title: "OSRM"
+    externalSystem:
+      name: "OSRM"
+      summary: "Self-hosted routing engine — turns the two addresses into a road-network route"
+      url: "https://project-osrm.org/"
+
+  - id: "location_received"
+    title: "CourierLocationReceived"
+    summary: "JSON, no protobuf contract — the Go value object as it stands"
+    message:
+      id: "CourierLocationReceived"
+      version: "1.0.0"
+    next_step:
+      id: "delivery"
+      label: "delivery.courier.location_received.v1"
+
+  - id: "delivery"
+    title: "Delivery Service"
+    summary: "The location consumer — topic comes from KAFKA_LOCATION_TOPIC, not from the compiled-in default"
+    service:
+      id: "DeliveryService"
+      version: "1.0.0"
+    next_steps:
+      - id: "redis"
+        label: "Cache the current position"
+      - id: "postgres"
+        label: "Append to history"
+      - id: "location_updated"
+        label: "Republish"
+
+  - id: "redis"
+    title: "Delivery Redis"
+    summary: "Current position with a TTL — this is what dispatch reads, not Postgres"
+    container:
+      id: "delivery-redis"
+      version: "1.0.0"
+    next_step:
+      id: "dispatch"
+      label: "Haversine distance term"
+
+  - id: "postgres"
+    title: "Delivery Postgres"
+    summary: "courier_location_history"
+    container:
+      id: "delivery-postgres"
+      version: "1.0.0"
+
+  - id: "location_updated"
+    title: "CourierLocationUpdated"
+    summary: "Courier id, location, timestamps — the smallest payload in the domain because it is the most frequent"
+    message:
+      id: "CourierLocationUpdated"
+      version: "1.0.0"
+    next_step:
+      id: "no_consumer"
+      label: "delivery.courier.location.v1"
+
+  - id: "no_consumer"
+    title: "No consumer"
+    custom:
+      title: "Nothing subscribes"
+      icon: "InboxIcon"
+      color: "gray"
+      type: "Topic"
+      summary: "delivery.courier.location.v1 has no consumers; retention is 1 day, the shortest in the domain"
+
+  - id: "dispatch"
+    title: "Auto-assignment"
+    summary: "Candidates are filtered on status, capacity and zone, then sorted by distance from the cached position"
+    flow:
+      id: "DeliverPackage"
+      version: "1.0.0"
+---
+
+<NodeGraph />
+
+## Why this never became an RPC
+
+`UpdateCourierLocation` exists in the domain model and has no RPC on [[service|DeliveryService]]. Couriers report
+continuously, and putting that on the gRPC API would tie the fleet's reporting rate to the API's availability for
+data whose value expires in seconds.
+
+## Two location topics, opposite directions
+
+| Topic | Direction |
+|-------|-----------|
+| [[channel\|delivery.courier.location_received.v1]] | inbound, from the courier side |
+| [[channel\|delivery.courier.location.v1]] | outbound, the domain event |
+
+The consuming side's compiled-in default is `courier.location.updates`, a topic that does not exist. The real name
+comes from `KAFKA_LOCATION_TOPIC` in the delivery Helm values — reading the Rust constant alone is misleading.
+
+## The producer is a test fixture, the contract is not
+
+Today the only publisher is [[service|CourierEmulationService]], which exists so non-production environments move
+packages at all. The event models a courier's phone, and a real courier app would publish exactly this.
+
+## What the position is for
+
+Dispatch. Auto-assignment sorts candidates by Haversine distance from the cached position — see
+[[adr|adr-delivery-0004-dispatching-and-geolocation]] and [[flow|DeliverPackage]].

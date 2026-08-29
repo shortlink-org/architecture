@@ -1,0 +1,138 @@
+---
+id: ManageLink
+name: "Edit or delete a link"
+version: "1.0.0"
+summary: "A link owner changes or removes an existing short link. The write lands immediately; every cached and enriched copy of it does not."
+owners:
+  - link-platform
+steps:
+  - id: "owner"
+    title: "Link owner edits a link"
+    summary: "From /next/links — the signed-in list of the owner's links"
+    actor:
+      name: "Link owner"
+    next_step:
+      id: "web_ui"
+      label: "Edit or delete"
+
+  - id: "web_ui"
+    title: "Web UI"
+    service:
+      id: "WebUI"
+      version: "1.0.0"
+    next_step:
+      id: "bff"
+      label: "REST call through the edge"
+
+  - id: "bff"
+    title: "Link BFF"
+    summary: "Reached through Oathkeeper with a JWT; the sidecar rejects anything without one"
+    service:
+      id: "LinkBFF"
+      version: "0.1.0"
+    next_steps:
+      - id: "update_link"
+        label: "gRPC — change"
+      - id: "delete_link"
+        label: "gRPC — remove"
+
+  - id: "update_link"
+    title: "UpdateLink"
+    message:
+      id: "UpdateLink"
+      version: "1.0.0"
+    next_step:
+      id: "link_service"
+      label: "Handle command"
+
+  - id: "delete_link"
+    title: "DeleteLink"
+    summary: "Keyed by hash"
+    message:
+      id: "DeleteLink"
+      version: "1.0.0"
+    next_step:
+      id: "link_service"
+      label: "Handle command"
+
+  - id: "link_service"
+    title: "Link Service"
+    summary: "Loads the aggregate, applies the change, and drains the domain event"
+    service:
+      id: "LinkService"
+      version: "1.0.0"
+    next_step:
+      id: "link_postgres"
+      label: "Write"
+
+  - id: "link_postgres"
+    title: "Link Postgres"
+    container:
+      id: "link-postgres"
+      version: "1.0.0"
+    next_steps:
+      - id: "link_updated"
+        label: "On change"
+      - id: "link_deleted"
+        label: "On removal"
+
+  - id: "link_updated"
+    title: "LinkUpdated"
+    summary: "Carries the full link after the change — no before/after pair, no field mask"
+    message:
+      id: "LinkUpdated"
+      version: "1.0.0"
+    next_step:
+      id: "stale_cache"
+      label: "link.link.updated.v1 — nobody subscribes"
+
+  - id: "link_deleted"
+    title: "LinkDeleted"
+    summary: "Hash and timestamp, nothing else — the consumer's job is to forget"
+    message:
+      id: "LinkDeleted"
+      version: "1.0.0"
+    next_step:
+      id: "stale_cache"
+      label: "link.link.deleted.v1 — nobody subscribes"
+
+  - id: "stale_cache"
+    title: "Proxy Redis cache"
+    summary: "Not invalidated — entries expire on their own timer, ~1 hour for a hit"
+    container:
+      id: "proxy-redis-cache"
+      version: "1.0.0"
+    next_step:
+      id: "stale_metadata"
+      label: "Meanwhile, on the enrichment side"
+
+  - id: "stale_metadata"
+    title: "Metadata is not re-extracted"
+    custom:
+      title: "No re-enrichment"
+      icon: "ExclamationTriangleIcon"
+      color: "orange"
+      type: "Caveat"
+      summary: "MetadataService reacts to LinkCreated only — a link whose URL changed keeps the old page's title and image"
+---
+
+<NodeGraph />
+
+## The write is the easy half
+
+Both commands take the same path as [[flow|ShortenLink]] up to [[service|LinkService]], and both end in an event on
+a fanout topic. The difference is what happens after: `LinkCreated` has a consumer, and these two do not.
+
+## Two copies go stale
+
+[[container|proxy-redis-cache]] is not invalidated on either event — [[adr|adr-proxy-0007-redis-caching]] records
+that the only non-expiry `clear()` in the proxy runs when a cached value fails to parse. An edited link keeps
+redirecting to its old target, and a deleted one keeps resolving, until the entry expires.
+
+[[service|MetadataService]] subscribes to `link.link.created.v1`. Change a link's URL and its
+[[entity|Meta]] still describes the page it used to point at.
+
+## Editing the URL keeps the address
+
+The hash is derived from URL + salt, so a `LinkUpdated` that changes the URL changes where the short address goes
+while the address itself stays. That is precisely the case the caches above get wrong.

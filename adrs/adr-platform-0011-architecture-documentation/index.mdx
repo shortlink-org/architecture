@@ -9,6 +9,8 @@ owners:
   - platform
 decisionMakers:
   - platform
+amendedBy:
+  - id: adr-platform-0043-likec4-for-c4-diagrams
 badges:
   - content: Documentation
     backgroundColor: purple
@@ -36,3 +38,7 @@ This is why nearly every service README in the monorepo opens with a `plantuml` 
 It is also the decision this catalog partly supersedes in practice: EventCatalog generates context and resource
 diagrams from frontmatter rather than from hand-drawn PlantUML. The two coexist — the C4 diagrams in the source
 repositories remain the authored view, the catalog's are derived.
+
+The drawing half of this decision has since been amended. C4 is still the model, but inside this catalog the diagrams
+are written in LikeC4 rather than C4-PlantUML — see
+[ADR-0043](../adr-platform-0043-likec4-for-c4-diagrams). C4-PlantUML remains in the source repositories.

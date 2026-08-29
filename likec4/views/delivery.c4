@@ -1,0 +1,102 @@
+// Views embedded by the Delivery ADRs.
+
+views {
+
+  view deliveryContext of delivery.deliverySystem.deliveryService {
+    title 'System Context - Delivery Service'
+    description 'Who drives the package lifecycle: the dispatcher, the courier, OMS and the geolocation and push services.'
+
+    include
+      dispatcher,
+      courier,
+      delivery,
+      delivery.deliverySystem.deliveryService,
+      delivery.deliverySystem.geolocationService,
+      delivery.deliverySystem.deliveryGraphql,
+      shop,
+      shop.orderSystem.oms,
+      pushService,
+      kafka
+
+    autoLayout LeftRight
+  }
+
+  view deliveryContainers of delivery.deliverySystem.deliveryService {
+    title 'Containers - Delivery Service'
+    description 'The Rust layers inside the Delivery Service and the storage and queue behind them.'
+
+    include
+      dispatcher,
+      courier,
+      delivery.deliverySystem.deliveryService,
+      delivery.deliverySystem.deliveryService.deliveryApi,
+      delivery.deliverySystem.deliveryService.deliveryUseCases,
+      delivery.deliverySystem.deliveryService.deliveryDomainLayer,
+      delivery.deliverySystem.deliveryDb,
+      delivery.deliverySystem.geolocationService,
+      pushService,
+      kafka
+
+    autoLayout TopBottom
+  }
+
+  view deliveryDomainComponents of delivery.deliverySystem.deliveryService.deliveryDomainLayer {
+    title 'Components - Delivery domain layer'
+    description 'Aggregates, value objects and domain services that decide who delivers what.'
+
+    include
+      delivery.deliverySystem.deliveryService.deliveryDomainLayer,
+      delivery.deliverySystem.deliveryService.deliveryDomainLayer.*,
+      delivery.deliverySystem.deliveryService.deliveryProtoModels
+
+    autoLayout LeftRight
+  }
+
+  view courierEmulationContext of delivery.courierEmulationSystem.courierEmulation {
+    title 'System Context - Courier Emulation'
+    description 'The emulator that stands in for real couriers in test scenarios.'
+
+    include
+      qaEngineer,
+      developer,
+      delivery,
+      delivery.courierEmulationSystem.courierEmulation,
+      delivery.deliverySystem.deliveryService,
+      delivery.deliverySystem.geolocationService,
+      osrm
+
+    autoLayout LeftRight
+  }
+
+  view courierEmulationContainers of delivery.courierEmulationSystem.courierEmulation {
+    title 'Containers - Courier Emulation'
+    description 'API, simulator, route generator, event emitter and the route cache behind them.'
+
+    include
+      qaEngineer,
+      delivery.courierEmulationSystem.courierEmulation,
+      delivery.courierEmulationSystem.courierEmulation.emulationApi,
+      delivery.courierEmulationSystem.courierEmulation.courierSimulator,
+      delivery.courierEmulationSystem.courierEmulation.routeGenerator,
+      delivery.courierEmulationSystem.courierEmulation.eventEmitter,
+      delivery.courierEmulationSystem.courierEmulation.routeCache,
+      delivery.deliverySystem.deliveryService,
+      delivery.deliverySystem.geolocationService,
+      osrm
+
+    autoLayout TopBottom
+  }
+
+  view courierSimulatorComponents of delivery.courierEmulationSystem.courierEmulation.courierSimulator {
+    title 'Components - Courier Simulator'
+    description 'The actor, movement engine, behaviour strategies and clock, plus the route generator they read from.'
+
+    include
+      delivery.courierEmulationSystem.courierEmulation.courierSimulator,
+      delivery.courierEmulationSystem.courierEmulation.courierSimulator.*,
+      delivery.courierEmulationSystem.courierEmulation.routeGenerator,
+      delivery.courierEmulationSystem.courierEmulation.routeGenerator.*
+
+    autoLayout LeftRight
+  }
+}

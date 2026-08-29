@@ -1,0 +1,63 @@
+// Element kinds and default styling for the shortlink-org architecture model.
+//
+// The hierarchy mirrors the catalog: domain > system > service > component.
+// Containers (databases, caches, queues) are modelled with their own kinds so
+// they keep the C4 shapes we used to get from C4-PlantUML.
+
+specification {
+
+  element actor {
+    style {
+      shape person
+      color secondary
+    }
+  }
+
+  element domain {
+    style {
+      color muted
+      opacity 10%
+    }
+  }
+
+  element system {
+    style {
+      color slate
+      opacity 20%
+    }
+  }
+
+  element service {
+    style {
+      color primary
+    }
+  }
+
+  element component {
+    style {
+      color indigo
+    }
+  }
+
+  element database {
+    style {
+      shape storage
+      color green
+    }
+  }
+
+  element queue {
+    style {
+      shape queue
+      color amber
+    }
+  }
+
+  element external {
+    style {
+      color gray
+    }
+  }
+
+  tag emulation
+}

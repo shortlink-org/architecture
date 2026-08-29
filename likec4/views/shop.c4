@@ -1,0 +1,130 @@
+// Views embedded by the Shop ADRs.
+
+views {
+
+  view shopContext {
+    title 'System Context - Shop Boundary'
+    description 'How the Shop boundary sits between the customer, the Auth edge, and the Delivery and Billing boundaries.'
+
+    include
+      customer,
+      auth.accessProxySystem.oathkeeper,
+      shop,
+      shop.storefrontSystem.shopUi,
+      shop.storefrontSystem.shopBff,
+      shop.catalogSystem.adminGraphql,
+      shop.catalogSystem.adminService,
+      shop.catalogSystem.emailSubscription,
+      shop.orderSystem.omsGraphql,
+      shop.orderSystem.pricer,
+      shop.orderSystem.oms,
+      delivery,
+      delivery.deliverySystem.deliveryGraphql,
+      delivery.deliverySystem.deliveryService,
+      billing,
+      billing.billingService,
+      kafka,
+      temporal
+
+    autoLayout LeftRight
+  }
+
+  view shopContainers {
+    title 'Containers - Shop Boundary'
+    description 'The same boundary one level down: every service plus the databases, caches and third-party systems it talks to.'
+
+    include
+      customer,
+      admin,
+      auth.accessProxySystem.oathkeeper,
+      shop,
+      shop.storefrontSystem.shopUi,
+      shop.storefrontSystem.shopBff,
+      shop.catalogSystem.adminUi,
+      shop.catalogSystem.adminGraphql,
+      shop.catalogSystem.adminService,
+      shop.catalogSystem.goodsService,
+      shop.catalogSystem.shopDb,
+      shop.catalogSystem.emailSubscription,
+      shop.orderSystem.omsGraphql,
+      shop.orderSystem.pricer,
+      shop.orderSystem.oms,
+      shop.orderSystem.omsDb,
+      shop.orderSystem.omsCache,
+      delivery,
+      delivery.deliverySystem.deliveryGraphql,
+      delivery.deliverySystem.deliveryService,
+      billing,
+      billing.billingService,
+      kafka,
+      temporal,
+      paymentGateway
+
+    autoLayout TopBottom
+  }
+
+  view omsContext of shop.orderSystem.oms {
+    title 'System Context - Order Management System'
+    description 'The OMS API and its Temporal workers, with the storage, queue and callers around them.'
+
+    include
+      customer,
+      shop.storefrontSystem.shopUi,
+      shop.storefrontSystem.shopBff,
+      shop.orderSystem.omsGraphql,
+      shop.orderSystem.oms,
+      shop.orderSystem.oms.*,
+      shop.orderSystem.omsDb,
+      shop.orderSystem.omsCache,
+      shop.orderSystem.pricer,
+      kafka,
+      temporal
+
+    autoLayout LeftRight
+  }
+
+  view omsTemporal of shop.orderSystem.oms {
+    title 'Temporal workflow architecture - OMS'
+    description 'How the gRPC API, the Temporal server and the cart and order workers hand work to each other.'
+
+    include
+      shop.orderSystem.oms,
+      shop.orderSystem.oms.*,
+      temporal,
+      temporalDb
+
+    autoLayout LeftRight
+  }
+
+  view omsGraphqlContext of shop.orderSystem.omsGraphql {
+    title 'System Context - OMS GraphQL Subgraph'
+    description 'The bridge that turns the OMS gRPC API into the GraphQL subgraph the BFF federates.'
+
+    include
+      customer,
+      shop.storefrontSystem.shopUi,
+      shop.storefrontSystem.shopBff,
+      shop.orderSystem.omsGraphql,
+      shop.orderSystem.oms
+
+    autoLayout LeftRight
+  }
+
+  view catalogContainers of shop.catalogSystem {
+    title 'Containers - Catalog System'
+    description 'Admin UI, the Django services behind it and the goods and prices database.'
+
+    include
+      admin,
+      customer,
+      auth.accessProxySystem.oathkeeper,
+      shop.catalogSystem,
+      shop.catalogSystem.adminUi,
+      shop.catalogSystem.adminGraphql,
+      shop.catalogSystem.adminService,
+      shop.catalogSystem.goodsService,
+      shop.catalogSystem.shopDb
+
+    autoLayout TopBottom
+  }
+}

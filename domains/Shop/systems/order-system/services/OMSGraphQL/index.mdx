@@ -6,6 +6,18 @@ summary: |
   Go/Connect subgraph that adapts the OMS gRPC API into the federated shop graph. Carts and orders.
 owners:
   - shop-platform
+sends:
+  - id: AddCartItem
+  - id: RemoveCartItem
+  - id: ResetCart
+  - id: CreateOrder
+  - id: CheckoutOrder
+  - id: CancelOrder
+  - id: UpdateOrderDeliveryInfo
+  - id: GetCart
+  - id: GetOrder
+  - id: ListOrders
+  - id: GetGoodsLeaderboard
 badges:
   - content: Go
     backgroundColor: blue

@@ -15,6 +15,18 @@ entities:
   - id: Courier
 flows:
   - id: DeliverPackage
+  - id: ManageCourierFleet
+  - id: TrackCourierLocation
+  - id: TrackOrder
+sends:
+  - id: PackageAccepted
+  - id: PackageAssigned
+  - id: PackageInTransit
+  - id: PackageDelivered
+  - id: PackageNotDelivered
+  - id: PackageRequiresHandling
+receives:
+  - id: AcceptOrder
 badges:
   - content: Supporting domain
     backgroundColor: blue

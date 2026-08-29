@@ -58,30 +58,7 @@ Use [Temporal](https://temporal.io/) for workflow orchestration.
 
 Each aggregate has its own workflow:
 
-```plantuml
-@startuml Temporal_Architecture
-!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
-
-LAYOUT_WITH_LEGEND()
-
-title Temporal Workflow Architecture
-
-System_Boundary(oms, "OMS Service") {
-    Container(api, "gRPC API", "Go", "Handles requests")
-    Container(cart_worker, "Cart Worker", "Go", "Executes cart workflows")
-    Container(order_worker, "Order Worker", "Go", "Executes order workflows")
-}
-
-System_Ext(temporal, "Temporal Server", "Orchestration")
-ContainerDb(temporal_db, "Temporal DB", "PostgreSQL", "Workflow state")
-
-Rel(api, temporal, "Start/Signal/Query workflows", "gRPC")
-Rel(temporal, cart_worker, "Dispatch tasks", "gRPC")
-Rel(temporal, order_worker, "Dispatch tasks", "gRPC")
-Rel(temporal, temporal_db, "Persist state", "SQL")
-
-@enduml
-```
+<LikeC4View viewId="omsTemporal" height="500px" />
 
 ### Communication Pattern
 

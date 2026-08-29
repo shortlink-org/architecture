@@ -1,0 +1,124 @@
+---
+id: GoodsLeaderboard
+name: "Rank goods by completed orders"
+version: "1.0.0"
+summary: "OMS consumes its own OrderCompleted event, folds it into a Redis projection, and serves the storefront's leaderboard from there rather than from the orders table."
+owners:
+  - shop-platform
+steps:
+  - id: "order_completed_state"
+    title: "Order reaches COMPLETED"
+    summary: "The terminal successful state of the order workflow"
+    service:
+      id: "OMSService"
+      version: "1.0.0"
+    next_step:
+      id: "order_completed"
+      label: "Publish through the outbox"
+
+  - id: "order_completed"
+    title: "OrderCompleted"
+    summary: "The only Shop event with a consumer"
+    message:
+      id: "OrderCompleted"
+      version: "1.0.0"
+    next_step:
+      id: "consumer"
+      label: "oms.order.completed.v1"
+
+  - id: "consumer"
+    title: "Leaderboard consumer"
+    summary: "OMS listening to itself — the event carries the order id, not the leaderboard payload"
+    service:
+      id: "OMSService"
+      version: "1.0.0"
+    next_step:
+      id: "hydrate"
+      label: "Load the authoritative snapshot"
+
+  - id: "hydrate"
+    title: "OMS Postgres"
+    summary: "OrderRepository returns the order; item metrics are computed by the consumer, not carried on the event"
+    container:
+      id: "oms-postgres"
+      version: "1.0.0"
+    next_step:
+      id: "project"
+      label: "Project"
+
+  - id: "project"
+    title: "OMS leaderboard read model"
+    summary: "Sorted sets for day, week and month — 45, 400 and 800 day retentions — written by an idempotent Lua script keyed on order id plus aggregate_version"
+    container:
+      id: "oms-redis-leaderboard"
+      version: "1.0.0"
+    next_step:
+      id: "query"
+      label: "Serve"
+
+  - id: "query"
+    title: "GetGoodsLeaderboard"
+    summary: "OrderService.GetLeaderboard — a read over Redis, never an aggregation over orders"
+    message:
+      id: "GetGoodsLeaderboard"
+      version: "1.0.0"
+    next_step:
+      id: "oms_graphql"
+      label: "gRPC"
+
+  - id: "oms_graphql"
+    title: "OMS GraphQL Subgraph"
+    service:
+      id: "OMSGraphQL"
+      version: "1.0.0"
+    next_step:
+      id: "bff"
+      label: "getLeaderboard(board, window, limit)"
+
+  - id: "bff"
+    title: "Shop BFF"
+    service:
+      id: "ShopBFF"
+      version: "1.0.0"
+    next_step:
+      id: "ui"
+      label: "carts subgraph field"
+
+  - id: "ui"
+    title: "Shop UI"
+    summary: "lib/leaderboard.ts — resolves each goodId to product metadata for display"
+    service:
+      id: "ShopUI"
+      version: "1.0.0"
+    next_step:
+      id: "customer"
+      label: "Rendered on the storefront"
+
+  - id: "customer"
+    title: "Customer sees the ranking"
+    actor:
+      name: "Customer"
+---
+
+<NodeGraph />
+
+## The event is a signal, not a payload
+
+`OrderCompleted` stays a domain fact. The consumer takes the order id from it and re-reads the authoritative
+snapshot from [[container|oms-postgres]] before projecting — which is what keeps the leaderboard from dictating the
+shape of a core event. [[adr|adr-shop-0006-goods-leaderboard-read-model]] records the decision.
+
+## Counting exactly once, twice over
+
+`COMPLETED` is terminal, so an order can only be counted once by the state machine. Kafka still delivers at least
+once, so the Lua script enforces it again with an idempotency key built from order id plus `aggregate_version`.
+
+## Eventually consistent on purpose
+
+An order completed a second ago may not be ranked yet. In exchange the query is a sorted-set read, and the whole
+projection is rebuildable from the event log.
+
+## Goods only
+
+Ranking storefronts or merchants is explicitly out of scope: order items carry `good_id`, `quantity` and `price`,
+and no merchant reference to group by.

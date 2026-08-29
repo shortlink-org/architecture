@@ -1,0 +1,85 @@
+---
+id: EmailVerification
+name: "Email verification"
+version: "1.0.0"
+summary: "A newly registered identity confirms its email address with a code, while the account is already usable."
+owners:
+  - auth-platform
+steps:
+  - id: "registration"
+    title: "User registration"
+    flow:
+      id: "UserRegistration"
+      version: "1.0.0"
+    next_step:
+      id: "verification_hook"
+      label: "Password path runs show_verification_ui"
+
+  - id: "verification_hook"
+    title: "show_verification_ui hook"
+    summary: "Runs after registration, alongside the session hook that has already signed the visitor in"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_step:
+      id: "courier"
+      label: "Send the verification code"
+
+  - id: "courier"
+    title: "Kratos courier"
+    summary: "SMTP, from no-reply@shortlink.best"
+    externalSystem:
+      name: "SMTP"
+      summary: "Outbound mail; the courier runs inside Kratos"
+      url: "https://www.ory.sh/docs/kratos/self-service/flows/verify-email-account-activation"
+    next_steps:
+      - id: "visitor_verifies"
+        label: "Verification code by email"
+      - id: "unverified"
+        label: "Ignored — nothing forces the visitor back"
+
+  - id: "visitor_verifies"
+    title: "Visitor submits the code"
+    summary: "The /verification page renders the flow"
+    service:
+      id: "AuthUI"
+      version: "1.0.0"
+    next_step:
+      id: "verified"
+      label: "Code accepted"
+
+  - id: "verified"
+    title: "Identity verified"
+    summary: "Kratos marks the email address verified on the identity"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+
+  - id: "unverified"
+    title: "Account stays usable"
+    custom:
+      title: "Verification is not a gate"
+      icon: "ExclamationTriangleIcon"
+      color: "orange"
+      type: "Caveat"
+      summary: "The session hook already signed the visitor in; nothing in the catalog checks verified status"
+---
+
+<NodeGraph />
+
+## Why the account works before it is verified
+
+Registration runs two after-hooks on the password path: `session`, which signs the visitor straight in, and
+`show_verification_ui`. The first makes the account immediately usable, so verification is a background errand
+rather than a step in the journey — see [[flow|UserRegistration]].
+
+## Nothing downstream reads it
+
+[[service|Oathkeeper]]'s `id_token` mutator puts `sub`, `email`, `name`, `identity_id`, `session_id` and public
+metadata into the JWT. Verified status is not among them, so no service behind the edge can make a decision on it
+even if it wanted to.
+
+## Only the password path
+
+`show_verification_ui` is one of the two after-hooks documented on the registration **password** path. An identity
+created through GitHub or GitLab is never sent this code.

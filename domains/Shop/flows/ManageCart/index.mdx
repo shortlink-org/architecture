@@ -1,0 +1,162 @@
+---
+id: ManageCart
+name: "Fill a cart"
+version: "1.0.0"
+summary: "A customer adds, removes and clears goods. Each change is a signal to a long-running Temporal workflow, committed together with the event that announces it."
+owners:
+  - shop-platform
+steps:
+  - id: "customer"
+    title: "Customer changes the cart"
+    actor:
+      name: "Customer"
+    next_step:
+      id: "ui"
+      label: "Add, remove or empty"
+
+  - id: "ui"
+    title: "Shop UI"
+    summary: "Next.js storefront; the cart is keyed by customer, not by browser session"
+    service:
+      id: "ShopUI"
+      version: "1.0.0"
+    next_step:
+      id: "bff"
+      label: "GraphQL mutation through the edge"
+
+  - id: "bff"
+    title: "Shop BFF"
+    summary: "Cosmo Router :9991 — reached with a JWT minted at the edge by Oathkeeper"
+    service:
+      id: "ShopBFF"
+      version: "1.0.0"
+    next_step:
+      id: "oms_graphql"
+      label: "carts subgraph :4011"
+
+  - id: "oms_graphql"
+    title: "OMS GraphQL Subgraph"
+    summary: "Translates the federated operation into an OMS gRPC call and nothing more"
+    service:
+      id: "OMSGraphQL"
+      version: "1.0.0"
+    next_steps:
+      - id: "add_item"
+        label: "CartService.Add"
+      - id: "remove_item"
+        label: "CartService.Remove"
+      - id: "reset_cart"
+        label: "CartService.Reset"
+
+  - id: "add_item"
+    title: "AddCartItem"
+    summary: "The cart is constructed in place if the customer has none — there is no create step"
+    message:
+      id: "AddCartItem"
+      version: "1.0.0"
+    next_step:
+      id: "oms"
+      label: "ADD signal"
+
+  - id: "remove_item"
+    title: "RemoveCartItem"
+    message:
+      id: "RemoveCartItem"
+      version: "1.0.0"
+    next_step:
+      id: "oms"
+      label: "REMOVE signal"
+
+  - id: "reset_cart"
+    title: "ResetCart"
+    message:
+      id: "ResetCart"
+      version: "1.0.0"
+    next_step:
+      id: "oms"
+      label: "RESET signal"
+
+  - id: "oms"
+    title: "OMS Service"
+    summary: "Loads the cart workflow, runs the domain method, saves the aggregate and drains its events to the outbox"
+    service:
+      id: "OMSService"
+      version: "1.0.0"
+    next_step:
+      id: "oms_postgres"
+      label: "One commit for aggregate and events"
+
+  - id: "oms_postgres"
+    title: "OMS Postgres"
+    summary: "Cart state and the oms_outbox rows, written in the same transaction"
+    container:
+      id: "oms-postgres"
+      version: "1.0.0"
+    next_steps:
+      - id: "outbox_forwarder"
+        label: "Forwarder picks the rows up"
+      - id: "get_cart"
+        label: "The client re-reads the cart"
+
+  - id: "outbox_forwarder"
+    title: "oms-outbox-forwarder"
+    summary: "In-process, reads the outbox through watermill-sql and republishes to Kafka"
+    service:
+      id: "OMSService"
+      version: "1.0.0"
+    next_steps:
+      - id: "item_added"
+        label: "oms.oms.item_added_event.v1"
+      - id: "item_removed"
+        label: "oms.oms.item_removed_event.v1"
+      - id: "cart_reset"
+        label: "oms.oms.reset_event.v1"
+
+  - id: "item_added"
+    title: "CartItemAdded"
+    message:
+      id: "CartItemAdded"
+      version: "1.0.0"
+
+  - id: "item_removed"
+    title: "CartItemRemoved"
+    message:
+      id: "CartItemRemoved"
+      version: "1.0.0"
+
+  - id: "cart_reset"
+    title: "CartReset"
+    summary: "Also emitted when checkout consumes the cart — a consumer cannot tell the two apart"
+    message:
+      id: "CartReset"
+      version: "1.0.0"
+
+  - id: "get_cart"
+    title: "GetCart"
+    summary: "The mutations return Empty; reading the cart back is a separate call"
+    message:
+      id: "GetCart"
+      version: "1.0.0"
+---
+
+<NodeGraph />
+
+## A cart is a workflow, not a row
+
+Every change is a signal — ADD, REMOVE, RESET — against a durable Temporal workflow keyed by customer id, so a cart
+outlives the browser session and the pod that served it. [[adr|adr-oms-0003-temporal]] made that choice.
+
+## Write, then read
+
+All three mutations return `google.protobuf.Empty`. The storefront learns what the cart now contains by asking
+[[query|GetCart]] — the command side never answers with state.
+
+## The events have no consumers
+
+`CartItemAdded`, `CartItemRemoved` and `CartReset` reach Kafka through the transactional outbox exactly like the
+order events do, and nothing subscribes to them. They are there so the cart's history is on the bus, not because
+something downstream is waiting.
+
+## Where it goes next
+
+Turning the cart into an order is [[flow|Checkout]].

@@ -6,6 +6,12 @@ summary: |
   Backend for frontend. Turns the domain's gRPC APIs into the REST API the web and mobile clients use.
 owners:
   - link-platform
+sends:
+  - id: CreateLink
+  - id: UpdateLink
+  - id: DeleteLink
+  - id: GetLinkView
+  - id: ListLinkViews
 specifications:
   - type: openapi
     path: api.yaml

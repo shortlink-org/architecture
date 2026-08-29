@@ -7,6 +7,20 @@ summary: |
   for every browser.
 owners:
   - shop-platform
+sends:
+  - id: AddCartItem
+  - id: RemoveCartItem
+  - id: ResetCart
+  - id: CreateOrder
+  - id: CheckoutOrder
+  - id: CancelOrder
+  - id: UpdateOrderDeliveryInfo
+  - id: GetCart
+  - id: GetOrder
+  - id: ListOrders
+  - id: GetGoodsLeaderboard
+  - id: GetOrderTracking
+  - id: SubscribeOrderTracking
 badges:
   - content: Cosmo Router
     backgroundColor: purple
@@ -54,6 +68,11 @@ flowchart TB
 
 Composition is not dynamic: `wgc router compose` reads `bff/graph.yaml` and generates an execution config from
 schema, proto and mapping files committed in each subgraph.
+
+> [!NOTE]
+> The commands and queries listed on this page pass **through** the router, they are not issued by it. Every one of
+> them is executed against its owning service by the subgraph in front of it — the router never opens a connection
+> to [[service|OMSService]] or [[service|DeliveryService]] itself.
 
 ## The one synchronous boundary crossing
 

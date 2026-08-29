@@ -1,0 +1,123 @@
+---
+id: CancelOrder
+name: "Cancel an order"
+version: "1.0.0"
+summary: "A customer cancels an order from PENDING or PROCESSING. The order stops; a package already accepted by Delivery does not."
+owners:
+  - shop-platform
+steps:
+  - id: "customer"
+    title: "Customer cancels"
+    actor:
+      name: "Customer"
+    next_step:
+      id: "ui"
+      label: "Cancel on the order page"
+
+  - id: "ui"
+    title: "Shop UI"
+    service:
+      id: "ShopUI"
+      version: "1.0.0"
+    next_step:
+      id: "bff"
+      label: "GraphQL mutation through the edge"
+
+  - id: "bff"
+    title: "Shop BFF"
+    summary: "Cosmo Router :9991"
+    service:
+      id: "ShopBFF"
+      version: "1.0.0"
+    next_step:
+      id: "oms_graphql"
+      label: "carts subgraph :4011"
+
+  - id: "oms_graphql"
+    title: "OMS GraphQL Subgraph"
+    service:
+      id: "OMSGraphQL"
+      version: "1.0.0"
+    next_step:
+      id: "cancel_cmd"
+      label: "gRPC"
+
+  - id: "cancel_cmd"
+    title: "CancelOrder"
+    summary: "OrderService.Cancel — reason optional"
+    message:
+      id: "CancelOrder"
+      version: "1.0.0"
+    next_step:
+      id: "oms"
+      label: "CANCEL transition"
+
+  - id: "oms"
+    title: "OMS Service"
+    summary: "Reachable from PENDING and from PROCESSING; both are non-terminal states of the order workflow"
+    service:
+      id: "OMSService"
+      version: "1.0.0"
+    next_step:
+      id: "oms_postgres"
+      label: "Aggregate and event in one commit"
+
+  - id: "oms_postgres"
+    title: "OMS Postgres"
+    container:
+      id: "oms-postgres"
+      version: "1.0.0"
+    next_step:
+      id: "cancelled"
+      label: "Outbox forwarder publishes"
+
+  - id: "cancelled"
+    title: "OrderCancelled"
+    summary: "Carries the reason when one was given; JSON on the wire, from the protobuf shape"
+    message:
+      id: "OrderCancelled"
+      version: "1.0.0"
+    next_steps:
+      - id: "no_consumer"
+        label: "oms.order.cancelled.v1"
+      - id: "orphan_package"
+        label: "If delivery was already requested"
+
+  - id: "no_consumer"
+    title: "No consumer"
+    custom:
+      title: "Nothing subscribes"
+      icon: "InboxIcon"
+      color: "gray"
+      type: "Topic"
+      summary: "oms.order.cancelled.v1 has no consumers — a cancellation is announced, not acted on"
+
+  - id: "orphan_package"
+    title: "The package keeps going"
+    custom:
+      title: "Package is not cancelled"
+      icon: "ExclamationTriangleIcon"
+      color: "red"
+      type: "Caveat"
+      summary: "DeliveryService exposes no cancel operation — an order cancelled after AcceptOrder leaves a live Package that will still be dispatched"
+---
+
+<NodeGraph />
+
+## Two states, two very different cancellations
+
+`PENDING` and `PROCESSING` both accept CANCEL, and the event looks the same from both. Whether delivery was already
+requested is not on the event — a consumer has to look at whether the order carries a `package_id`.
+
+## Cancelling stops the order, not the shipment
+
+[[flow|Checkout]] hands the order to [[domain|Delivery]] with a synchronous [[command|AcceptOrder]], and
+[[service|DeliveryService]] has no counterpart to it. Cancel after that point and the [[entity|Package]] keeps its
+own state machine: it can still be assigned to a courier, carried and reported back — and
+[[service|OMSService]] will apply those updates to an order that is already cancelled.
+
+Nothing in the catalog compensates for this today. It is the clearest gap in the Shop ↔ Delivery contract.
+
+## It never reaches the leaderboard
+
+`COMPLETED` is the only state that feeds [[flow|GoodsLeaderboard]], so a cancelled order simply never counts.

@@ -9,7 +9,12 @@ owners:
   - platform
 decisionMakers:
   - platform
-related:
+appliesTo:
+  - type: entity
+    id: Link
+  - type: container
+    id: link-postgres
+amends:
   - id: adr-platform-0004-uuid-primary-keys
 badges:
   - content: Data

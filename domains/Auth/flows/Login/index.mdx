@@ -1,0 +1,83 @@
+---
+id: Login
+name: "Sign in"
+version: "1.0.0"
+summary: "A visitor signs in through the Kratos self-service login flow — password or an OIDC provider — and leaves with a session cookie the rest of the platform trusts."
+owners:
+  - auth-platform
+steps:
+  - id: "visitor_starts"
+    title: "Visitor opens /auth/login"
+    summary: "Usually arrived at by following the 302 Oathkeeper returns for an unauthenticated HTML request"
+    actor:
+      name: "Visitor"
+    next_step:
+      id: "auth_ui"
+      label: "Load the login form"
+
+  - id: "auth_ui"
+    title: "Auth UI"
+    summary: "Fetches the flow from Kratos and renders the returned nodes — a new login method is a Kratos configuration change, not a UI change"
+    service:
+      id: "AuthUI"
+      version: "1.0.0"
+    next_step:
+      id: "kratos_login"
+      label: "Submit credentials or choose a provider"
+
+  - id: "kratos_login"
+    title: "Kratos"
+    summary: "Runs the login flow behind /api/auth — the noop Oathkeeper rule passes it through untouched"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_steps:
+      - id: "oidc_provider"
+        label: "OIDC — GitHub or GitLab"
+      - id: "session_issued"
+        label: "Password — Argon2 verify"
+
+  - id: "oidc_provider"
+    title: "OIDC provider"
+    externalSystem:
+      name: "GitHub / GitLab"
+      summary: "Returns claims for an identity that already exists"
+      url: "https://www.ory.sh/docs/kratos/social-signin/overview"
+    next_step:
+      id: "session_issued"
+      label: "Return with claims"
+
+  - id: "session_issued"
+    title: "Session issued"
+    summary: "ory_kratos_session on shortlink.best, SameSite=Lax, 720h lifespan"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_step:
+      id: "authenticated_request"
+      label: "Every later request carries the cookie"
+
+  - id: "authenticated_request"
+    title: "Authenticated request through the edge"
+    flow:
+      id: "AuthenticatedRequest"
+      version: "1.0.0"
+---
+
+<NodeGraph />
+
+## Where visitors come from
+
+Most sign-ins do not start on this page. An unauthenticated HTML request through the edge is answered by
+[[service|Oathkeeper]] with a `302` to `https://shortlink.best/auth/login` — the first branch of
+[[flow|AuthenticatedRequest]].
+
+## The UI holds no logic
+
+[[service|AuthUI]] asks Kratos for the flow and renders whatever nodes come back. Password, GitHub and GitLab are
+all the same code path in the browser; which methods exist is decided by Kratos configuration.
+
+## What the visitor leaves with
+
+A session cookie, and nothing else. No token is issued here — the 15-minute RS256 JWT that internal services see is
+minted per request at the edge, from this session.

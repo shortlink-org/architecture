@@ -1,0 +1,147 @@
+---
+id: ManageCourierFleet
+name: "Manage the courier fleet"
+version: "1.0.0"
+summary: "Couriers are registered and moved between available, unavailable and archived. The commands are gRPC; the events they emit have no consumers."
+owners:
+  - shop-platform
+steps:
+  - id: "operator"
+    title: "Fleet operator"
+    summary: "Calls DeliveryService directly — no UI for the courier commands is documented"
+    actor:
+      name: "Fleet operator"
+    next_steps:
+      - id: "register"
+        label: "Onboard a courier"
+      - id: "activate"
+        label: "Make dispatchable"
+      - id: "deactivate"
+        label: "Take out of rotation"
+      - id: "archive"
+        label: "Retire"
+
+  - id: "register"
+    title: "RegisterCourier"
+    summary: "Contact details, transport type, maximum distance, work zone, work hours and a push token"
+    message:
+      id: "RegisterCourier"
+      version: "1.0.0"
+    next_step:
+      id: "delivery"
+      label: "gRPC"
+
+  - id: "activate"
+    title: "ActivateCourier"
+    summary: "Status → FREE"
+    message:
+      id: "ActivateCourier"
+      version: "1.0.0"
+    next_step:
+      id: "delivery"
+      label: "gRPC"
+
+  - id: "deactivate"
+    title: "DeactivateCourier"
+    summary: "Status → UNAVAILABLE, without archiving"
+    message:
+      id: "DeactivateCourier"
+      version: "1.0.0"
+    next_step:
+      id: "delivery"
+      label: "gRPC"
+
+  - id: "archive"
+    title: "ArchiveCourier"
+    summary: "Status → ARCHIVED — a soft delete, so historical packages still resolve their courier"
+    message:
+      id: "ArchiveCourier"
+      version: "1.0.0"
+    next_step:
+      id: "delivery"
+      label: "gRPC"
+
+  - id: "delivery"
+    title: "Delivery Service"
+    summary: "Applies the transition to the Courier aggregate; max_load is derived from transport_type, never supplied"
+    service:
+      id: "DeliveryService"
+      version: "1.0.0"
+    next_step:
+      id: "delivery_postgres"
+      label: "Aggregate and outbox in one transaction"
+
+  - id: "delivery_postgres"
+    title: "Delivery Postgres"
+    container:
+      id: "delivery-postgres"
+      version: "1.0.0"
+    next_steps:
+      - id: "courier_registered"
+        label: "On registration"
+      - id: "status_changed"
+        label: "On every status transition"
+
+  - id: "courier_registered"
+    title: "CourierRegistered"
+    summary: "Name, email, phone, transport type and initial status — the push token is deliberately left off"
+    message:
+      id: "CourierRegistered"
+      version: "1.0.0"
+    next_step:
+      id: "no_consumer"
+      label: "delivery.courier.events.v1"
+
+  - id: "status_changed"
+    title: "CourierStatusChanged"
+    summary: "Carries old_status and new_status, so a consumer sees the transition rather than the result"
+    message:
+      id: "CourierStatusChanged"
+      version: "1.0.0"
+    next_step:
+      id: "no_consumer"
+      label: "delivery.courier.events.v1"
+
+  - id: "no_consumer"
+    title: "No consumer"
+    custom:
+      title: "Nothing subscribes"
+      icon: "InboxIcon"
+      color: "gray"
+      type: "Topic"
+      summary: "delivery.courier.events.v1 has no consumers today — the fleet's history is on the bus, unread"
+
+  - id: "dispatch"
+    title: "Dispatch also changes status"
+    summary: "Assignment and completion change a courier's load — no command is issued"
+    flow:
+      id: "DeliverPackage"
+      version: "1.0.0"
+    next_step:
+      id: "status_changed"
+      label: "Emits the same event"
+---
+
+<NodeGraph />
+
+## Who calls these is not recorded
+
+The four commands are RPCs on [[service|DeliveryService]]. No admin surface for them appears anywhere in this
+catalog — [[service|DeliveryGraphQL]] exposes tracking only, and the Shop back office
+([[service|AdminUI]]) is the catalogue's admin, not the fleet's. The operator above is the use case, not a
+documented application.
+
+## Capacity is a consequence of the vehicle
+
+`max_load` is derived from `transport_type` on registration, and re-derived by
+[[command|ChangeCourierTransportType]] later. There is no way to hand a courier a capacity directly.
+
+## Archiving keeps the aggregate
+
+`ARCHIVED` removes a courier from dispatch and leaves the record in place, so a [[entity|Package]] delivered last
+month still resolves the courier who carried it.
+
+## Status changes twice over
+
+This flow covers the deliberate transitions. The other producer of `CourierStatusChanged` is dispatch itself — see
+[[flow|DeliverPackage]] — which changes a courier's load without anyone issuing a command.

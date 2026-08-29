@@ -18,6 +18,20 @@ entities:
   - id: Order
 flows:
   - id: Checkout
+  - id: ManageCart
+  - id: CancelOrder
+  - id: GoodsLeaderboard
+sends:
+  - id: AcceptOrder
+  - id: OrderDeliveryRequested
+  - id: OrderDeliveryCompleted
+  - id: OrderDeliveryFailed
+receives:
+  - id: PackageAccepted
+  - id: PackageAssigned
+  - id: PackageInTransit
+  - id: PackageDelivered
+  - id: PackageNotDelivered
 badges:
   - content: Core domain
     backgroundColor: blue

@@ -1,0 +1,76 @@
+---
+id: Logout
+name: "Sign out"
+version: "1.0.0"
+summary: "A signed-in visitor ends their Kratos session; the cookie is cleared and the next request through the edge falls back to the login redirect."
+owners:
+  - auth-platform
+steps:
+  - id: "visitor"
+    title: "Signed-in visitor signs out"
+    actor:
+      name: "Visitor"
+    next_step:
+      id: "kratos_logout"
+      label: "Submit the logout flow"
+
+  - id: "kratos_logout"
+    title: "Kratos"
+    summary: "Terminates the session — the logout edge of the self-service state machine"
+    service:
+      id: "Kratos"
+      version: "1.0.0"
+    next_steps:
+      - id: "cookie_cleared"
+        label: "Session revoked"
+      - id: "live_jwt"
+        label: "Tokens already minted are untouched"
+
+  - id: "cookie_cleared"
+    title: "ory_kratos_session cleared"
+    summary: "The browser no longer carries a session on shortlink.best"
+    next_step:
+      id: "next_request"
+      label: "Next request through the edge"
+
+  - id: "next_request"
+    title: "Oathkeeper"
+    summary: "cookie_session finds no session — /sessions/whoami returns 401"
+    service:
+      id: "Oathkeeper"
+      version: "1.0.0"
+    next_step:
+      id: "login_redirect"
+      label: "302 for HTML, JSON error otherwise"
+
+  - id: "login_redirect"
+    title: "Redirect to login"
+    flow:
+      id: "Login"
+      version: "1.0.0"
+
+  - id: "live_jwt"
+    title: "JWT already in flight"
+    summary: "The id_token mutator signs a 15-minute token; one handed to a service before logout stays valid until it expires"
+    custom:
+      title: "15-minute window"
+      icon: "ClockIcon"
+      color: "orange"
+      type: "Caveat"
+      summary: "Logout revokes the session, not tokens already minted from it"
+---
+
+<NodeGraph />
+
+## Revocation is not instant everywhere
+
+The session dies immediately, and every *new* request is rejected at the edge. But a JWT minted moments before
+logout is a signed bearer token with a 15-minute TTL and no introspection step behind it — an internal service
+holding one cannot tell that the session behind it is gone.
+
+## Where it is triggered from is not documented
+
+[[service|AuthUI]] serves `/login`, `/registration`, `/forgot` and `/verification`; there is no logout page in that
+route table. The use case is real — the [[service|AuthService]] README lists *UC-2 Log out*, and
+[[service|Kratos]]' self-service state machine has the logout edge — but which surface calls it is not recorded in
+this catalog.
