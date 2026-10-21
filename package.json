@@ -22,7 +22,7 @@
     "check:c4": "likec4 validate likec4"
   },
   "dependencies": {
-    "@eventcatalog/core": "4.9.0",
+    "@eventcatalog/core": "5.5.0",
     "@eventcatalog/linter": "1.1.17"
   },
   "devDependencies": {
